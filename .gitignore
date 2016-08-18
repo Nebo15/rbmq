@@ -1,0 +1,8 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Elixir template
+/_build
+/cover
+/deps
+erl_crash.dump
+*.ez
+.idea
