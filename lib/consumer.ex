@@ -1,57 +1,53 @@
 defmodule MQ.Consumer do
+  import RBMQ.Genserver.Interface
   use GenServer
   use AMQP
 
+  @exchange "os_decision_engine_exchange"
+
+  def get(name, queue) do
+    name
+    |> get_server
+    |> server_call({:get, queue})
+  end
+
+  def status(name, queue) do
+    name
+    |> get_server
+    |> server_call({:status, queue})
+  end
+
   # Server
-  def start_link do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__, func: "func")
+  def start_link(name, queue) do
+    GenServer.start_link(__MODULE__, [queue: queue], name: via_tuple(name))
   end
 
-  def get(server) do
-#    GenServer.call(server, {:get})
+  def init(opts) do
+    queue = opts[:queue]
+    queue_err =  "#{queue}_error"
+
+    {:ok, conn} = Connection.open(get_amqp_params)
+    {:ok, chan} = Channel.open(conn)
+    Basic.qos(chan, prefetch_count: 10)
+    Queue.declare(chan, queue_err, durable: true)
+    Queue.declare(chan, queue, durable: true, arguments: [
+      {"x-dead-letter-exchange", :longstr, ""},
+      {"x-dead-letter-routing-key", :longstr, queue_err}
+    ])
+
+    Exchange.direct(chan, @exchange, durable: true)
+    Queue.bind(chan, queue, @exchange, [routing_key: queue])
+
+    {:ok, _consumer_tag} = Basic.consume(chan, queue)
+    {:ok, chan}
   end
 
-  @exchange    "os_decision_engine_exchange"
-  @queue       "os_decision_queue"
-  @queue_error "#{@queue}_error"
-
-  def init(_opts) do
-    rabbitmq_connect
+  def handle_call({:status, queue}, _from, chan) do
+    {:reply, Queue.status(chan, queue), chan}
   end
 
-  defp rabbitmq_connect do
-    case Connection.open(Rbmq.get_amqp_params) do
-      {:ok, conn} ->
-        # Get notifications when the connection goes down
-        Process.monitor(conn.pid)
-        # Everything else remains the same
-        {:ok, chan} = Channel.open(conn)
-        Basic.qos(chan, prefetch_count: 10)
-        Queue.declare(chan, @queue_error, durable: true)
-        Queue.declare(chan, "os_decision_engine_ex", durable: true)
-        Queue.declare(chan, @queue, durable: true,
-                                    arguments: [{"x-dead-letter-exchange", :longstr, ""},
-                                                {"x-dead-letter-routing-key", :longstr, @queue_error}])
-
-        Exchange.direct(chan, @exchange, durable: true)
-        Queue.bind(chan, @queue, @exchange)
-
-        {:ok, _consumer_tag} = Basic.consume(chan, @queue)
-        {:ok, chan}
-      {:error, _} ->
-        # Reconnection loop
-        :timer.sleep(10000)
-        rabbitmq_connect
-    end
-  end
-
-  def handle_call({:get}, _from, chan) do
-    {:reply, Basic.get(chan, @queue), chan}
-  end
-
-  def handle_info({:DOWN, _, :process, _pid, _reason}, _) do
-    {:ok, chan} = rabbitmq_connect
-    {:noreply, chan}
+  def handle_call({:get, queue}, _from, chan) do
+    {:reply, Basic.get(chan, queue), chan}
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
@@ -69,33 +65,43 @@ defmodule MQ.Consumer do
     {:noreply, chan}
   end
 
-  def handle_info({:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}}, chan) do
-    spawn fn -> consume(chan, tag, redelivered, payload) end
+  def handle_info({:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered, routing_key: routing_key}}, chan) do
+    spawn fn -> consume(chan, tag, redelivered, payload, routing_key) end
     {:noreply, chan}
   end
 
-  defp consume(chan, tag, redelivered, payload) do
-    try do
-#      IO.inspect chan
-#      IO.inspect tag
-#      IO.inspect redelivered
-#      IO.inspect payload
+  defp consume(chan, tag, _redelivered, payload, "os_decision_queue") do
+    case MQ.Producer.publish("p1", "os_decision_next", payload) do
+      :ok -> Basic.ack chan, tag
+      _   -> Basic.reject chan, tag, requeue: false
+    end
+  end
 
-      number = String.to_integer(payload)
-      if number <= 10 do
-        Basic.ack chan, tag
-        IO.puts "Consumed a #{number}."
-      else
-        Basic.reject chan, tag, requeue: false
-        IO.puts "#{number} is too big and was rejected."
+  defp consume(chan, tag, redelivered, payload, "os_decision_next") do
+    try do
+
+      {:ok, payload} = Poison.decode(payload)
+
+      {:ok, conn} = Postgrex.start_link(hostname: "localhost", username: "postgres", password: "postgres", database: "rbmq")
+      res = Postgrex.query(conn, "INSERT INTO sample (val) VALUES (#{payload})", [])
+      GenServer.stop(conn)
+
+      case res do
+        {:ok, _}         -> Basic.ack chan, tag
+        {:error, reason} -> Basic.reject chan, tag, requeue: not redelivered
       end
+
+
     rescue
       _ ->
         # Requeue unless it's a redelivered message.
         # This means we will retry consuming a message once in case of exception
         # before we give up and have it moved to the error queue
         Basic.reject chan, tag, requeue: not redelivered
-        IO.puts "Error converting #{payload} to integer"
     end
+  end
+
+  defp consume(chan, tag, _redelivered, _payload, _routing_key) do
+    Basic.reject chan, tag, requeue: false
   end
 end
