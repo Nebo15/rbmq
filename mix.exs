@@ -7,6 +7,8 @@ defmodule Rbmq.Mixfile do
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     description: description(),
+     package: package(),
      deps: deps()]
   end
 
@@ -34,5 +36,20 @@ defmodule Rbmq.Mixfile do
     {:amqp, "0.1.4"},
     {:dogma, "~> 0.1", only: :dev},
     {:credo, "~> 0.4", only: [:dev, :test]}]
+  end
+
+  defp description do
+    """
+    Simple API for spawn RabbitMQ Producers and Consumers.
+    """
+  end
+
+  defp package do
+    [
+     name: :rbmq,
+     files: ["lib", "mix.exs", "README.md", "LICENSE.md"],
+     maintainers: ["Pavel Vesnin"],
+     licenses: ["MIT"],
+     links: %{"GitHub" => "https://github.com/Nebo15/rbmq"}]
   end
 end
