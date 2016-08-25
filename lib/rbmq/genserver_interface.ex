@@ -4,10 +4,10 @@ defmodule Rbmq.Genserver.Interface do
   """
 
   def get_amqp_params do
-    get_amqp_params Application.get_env(:rbmq, :amqp_params, "amqp://guest:guest@localhost")
+    get_amqp_params Application.get_env(:rbmq, :amqp_params)
   end
 
-  defp get_amqp_params(params) when is_list(params) or is_binary(params) do
+  defp get_amqp_params(params) when is_list(params) do
     params
   end
 
@@ -16,7 +16,7 @@ defmodule Rbmq.Genserver.Interface do
   end
 
   def get_exchange(nil) do
-    get_exchange Application.get_env(:rbmq, :amqp_exchange, "rbmq_exchange")
+    get_exchange Application.get_env(:rbmq, :amqp_exchange)
   end
 
   def get_exchange(exchange) when is_binary(exchange) do

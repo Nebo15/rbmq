@@ -27,15 +27,4 @@ use Mix.Config
 # Configuration from the imported file will override the ones defined
 # here (which is why it is important to import them last).
 #
-#     import_config "#{Mix.env}.exs"
-
-config :rbmq, amqp_exchange: "rbmq_exchange"
-
-config :rbmq, prefetch_count: 10
-
-config :rbmq, amqp_params: [
-  host: "localhost",
-  port: 5672,
-  username: "guest",
-  password: "guest",
-]
+import_config "#{Mix.env}.exs"
