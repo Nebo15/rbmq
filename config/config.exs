@@ -29,6 +29,9 @@ use Mix.Config
 #
 #     import_config "#{Mix.env}.exs"
 
+config :rbmq, amqp_exchange: "rbmq_exchange"
+
+config :rbmq, prefetch_count: 10
 
 config :rbmq, amqp_params: [
   host: "localhost",
