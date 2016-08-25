@@ -8,8 +8,8 @@ defmodule Rbmq.SupervisorProducer do
     Supervisor.start_link(__MODULE__, [], name: :producer_supervisor)
   end
 
-  def spawn_producer(name, queue, exchange \\ nil, prefetch_count \\ nil) do
-    Supervisor.start_child(:producer_supervisor, [name, queue, exchange, prefetch_count])
+  def spawn_producer(name, queue, prefetch_count \\ nil, exchange \\ nil) do
+    Supervisor.start_child(:producer_supervisor, [name, queue, prefetch_count, exchange])
   end
 
   def init(_) do

@@ -7,8 +7,6 @@ defmodule Rbmq.Producer do
   use AMQP
   require Logger
 
-  @exchange "os_exchange_decision_engine"
-
   # Client
   def publish(name, queue, data) do
     name
@@ -18,7 +16,7 @@ defmodule Rbmq.Producer do
 
   # Server
 
-  def start_link(name, queue, exchange \\ nil, prefetch_count \\ nil) do
+  def start_link(name, queue, prefetch_count \\ nil, exchange \\ nil) do
     GenServer.start_link(
       __MODULE__,
       {queue, get_exchange(exchange), get_prefetch_count(prefetch_count)},
@@ -44,18 +42,12 @@ defmodule Rbmq.Producer do
     {:ok, {chan, [exchange: exchange]}}
   end
 
-  def handle_call({:publish, routing_key, data}, _from, {chan, [exchange: exchange]}) do
+  def handle_call({:publish, routing_key, data}, _from, state = {chan, [exchange: exchange]}) do
     case Basic.publish(chan, exchange, routing_key, Poison.encode!(data), [mandatory: true, persistent: true]) do
       :ok ->
-        {:reply, :ok, chan}
+        {:reply, :ok, state}
       _ ->
-        {:reply, :error, chan}
+        {:reply, :error, state}
     end
-  end
-
-  def handle_call({:publish, routing_key, data}, _from, chan) do
-    IO.inspect "shit"
-  IO.inspect chan
-    {:reply, :error, chan}
   end
 end

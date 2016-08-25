@@ -7,8 +7,6 @@ defmodule Rbmq.Consumer do
   use GenServer
   use AMQP
 
-  @exchange "os_exchange_decision_engine"
-
   def get(name, queue) do
     name
     |> get_server
@@ -23,13 +21,11 @@ defmodule Rbmq.Consumer do
 
   # Server
 
-  def start_link(name, queue, exchange \\ nil) do
-    GenServer.start_link(__MODULE__, [queue: queue, exchange: get_exchange(exchange)], name: via_tuple(name))
+  def start_link(name, queue, callback, exchange \\ nil) do
+    GenServer.start_link(__MODULE__, {queue, callback, get_exchange(exchange)}, name: via_tuple(name))
   end
 
-  def init(opts) do
-    exchange = opts[:exchange]
-    queue = opts[:queue]
+  def init({queue, callback, exchange}) do
     queue_err =  "#{queue}_error"
 
     {:ok, conn} = Connection.open(get_amqp_params)
@@ -46,57 +42,39 @@ defmodule Rbmq.Consumer do
     Queue.bind(chan, queue, exchange, [routing_key: queue])
 
     {:ok, _consumer_tag} = Basic.consume(chan, queue)
-    {:ok, {chan, [exchange: exchange]}}
+    {:ok, {chan, [callback: callback]}}
   end
 
-  def handle_call({:status, queue}, _from, {chan, _opts}) do
-    {:reply, Queue.status(chan, queue), chan}
+  def handle_call({:status, queue}, _from, {chan, _opts} = state) do
+    {:reply, Queue.status(chan, queue), state}
   end
 
-  def handle_call({:get, queue}, _from, {chan, _opts}) do
-    {:reply, Basic.get(chan, queue), chan}
+  def handle_call({:get, queue}, _from, {chan, _opts} = state) do
+    {:reply, Basic.get(chan, queue), state}
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
-  def handle_info({:basic_consume_ok, %{consumer_tag: _consumer_tag}}, {chan, _opts}) do
-    {:noreply, chan}
+  def handle_info({:basic_consume_ok, %{consumer_tag: _consumer_tag}}, {chan, _opts} = state) do
+    {:noreply, state}
   end
 
   # Sent by the broker when the consumer is unexpectedly cancelled (such as after a queue deletion)
-  def handle_info({:basic_cancel, %{consumer_tag: _consumer_tag}}, {chan, _opts}) do
-    {:stop, :normal, chan}
+  def handle_info({:basic_cancel, %{consumer_tag: _consumer_tag}}, {chan, _opts} = state) do
+    {:stop, :normal, state}
   end
 
   # Confirmation sent by the broker to the consumer process after a Basic.cancel
-  def handle_info({:basic_cancel_ok, %{consumer_tag: _consumer_tag}}, {chan, _opts}) do
-    {:noreply, chan}
+  def handle_info({:basic_cancel_ok, %{consumer_tag: _consumer_tag}}, {chan, _opts} = state) do
+    {:noreply, state}
   end
 
   def handle_info(
-    {:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered, routing_key: key}},
-    {chan, [exchange: exchange]}) do
-    spawn fn -> consume(chan, tag, redelivered, payload, key) end
-    {:noreply, chan}
-  end
+    {:basic_deliver,
+    payload,
+    %{delivery_tag: tag, redelivered: redelivered, routing_key: key}},
+    {chan, [callback: callback]} = state) do
 
-  defp consume(chan, tag, redelivered, _data, "os_decision_queue") do
-    try do
-      Logger.debug "consume"
-
-      # it's enough'
-      Basic.ack chan, tag
-
-    rescue
-      err ->
-        Logger.error "consumer 'os_decision_queue' error #{inspect err}"
-        # Requeue unless it's a redelivered message.
-        # This means we will retry consuming a message once in case of exception
-        # before we give up and have it moved to the error queue
-        Basic.reject chan, tag, requeue: not redelivered
-    end
-  end
-
-  defp consume(chan, tag, _redelivered, _payload, _routing_key) do
-    Basic.reject chan, tag, requeue: false
+    callback.(chan, tag, redelivered, payload, key)
+    {:noreply, state}
   end
 end

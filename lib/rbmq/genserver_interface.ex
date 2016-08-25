@@ -28,11 +28,11 @@ defmodule Rbmq.Genserver.Interface do
   end
 
   def get_prefetch_count(nil) do
-    get_exchange Application.get_env(:rbmq, :prefetch_count, 10)
+    get_prefetch_count Application.get_env(:rbmq, :prefetch_count, 10)
   end
 
-  def get_prefetch_count(count) when is_integer(count) do
-    count
+  def get_prefetch_count(num) when is_integer(num) do
+    num
   end
 
   def get_prefetch_count(_) do
@@ -40,7 +40,7 @@ defmodule Rbmq.Genserver.Interface do
   end
 
   def via_tuple(name) do
-    {:via, :gproc, {:n, :l, {:queue, "consumer_#{name}"}}}
+    {:via, :gproc, {:n, :l, {:queue, name}}}
   end
 
   def get_server(name) do

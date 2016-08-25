@@ -8,8 +8,8 @@ defmodule Rbmq.SupervisorConsumer do
     Supervisor.start_link(__MODULE__, [], name: :consumer_supervisor)
   end
 
-  def spawn_consumer(name, queue, exchange \\ nil) do
-    Supervisor.start_child(:producer_supervisor, [name, queue, exchange])
+  def spawn_consumer(name, queue, callback, exchange \\ nil) do
+    Supervisor.start_child(:consumer_supervisor, [name, queue, callback, exchange])
   end
 
   def init(_) do
