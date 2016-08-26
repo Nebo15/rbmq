@@ -8,6 +8,16 @@ defmodule Rbmq.Genserver.Interface do
   end
 
   defp get_amqp_params(params) when is_list(params) do
+    # Normalize port option when its a string
+    {_, params} = Keyword.get_and_update!(params, :port, fn port ->
+      case cast_integer(port) do
+        :error ->
+          raise "can not convert port to an integer"
+        port_int ->
+          {port, port_int}
+      end
+    end)
+
     params
   end
 
@@ -32,11 +42,11 @@ defmodule Rbmq.Genserver.Interface do
   end
 
   def get_prefetch_count(str) when is_binary(str) do
-    case Integer.parse(str) do
-      {num, _} ->
-        num
+    case cast_integer(str) do
       :error ->
         raise "can not convert prefetch_count to an integer"
+      count ->
+        count
     end
   end
 
@@ -66,5 +76,23 @@ defmodule Rbmq.Genserver.Interface do
 
   def server_call({:error, reason}, _) do
     {:error, reason}
+  end
+
+  defp cast_integer(var) do
+    case is_integer(var) do
+      true ->
+        var
+      _ ->
+        string_to_integer(var)
+    end
+  end
+
+  defp string_to_integer(var) do
+    case Integer.parse(var) do
+      {num, _} ->
+        num
+      :error ->
+        :error
+    end
   end
 end
