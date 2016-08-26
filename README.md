@@ -1,6 +1,6 @@
 # Rbmq
 
-Simple and easy creation of producers and consumers for RabbitMQ. 
+Simple and easy creation of producers and consumers for RabbitMQ.
 Written over <a href="https://github.com/pma/amqp" target="_blank">AMQP</a>
 
 ## Installation
@@ -11,7 +11,7 @@ The package can be installed as:
 
     ```elixir
     def deps do
-      [{:rbmq, "~> 0.2.0"}]
+      [{:rbmq, "~> 0.2.2"}]
     end
     ```
 

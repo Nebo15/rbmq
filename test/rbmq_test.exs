@@ -71,7 +71,7 @@ defmodule RbmqTest do
     assert "prefetch_count must be an integer" == err
 
     {:error, {:EXIT, {%RuntimeError{message: err}, _}}} = Rbmq.spawn_producer(@p1, @queue, "invalid")
-    assert "prefetch_count must be an integer" == err
+    assert "can not convert prefetch_count to an integer" == err
 
     assert Process.exit(pid1, :kill)
   end

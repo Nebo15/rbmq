@@ -31,6 +31,15 @@ defmodule Rbmq.Genserver.Interface do
     get_prefetch_count Application.get_env(:rbmq, :prefetch_count, 10)
   end
 
+  def get_prefetch_count(str) when is_binary(str) do
+    case Integer.parse(str) do
+      {num, _} ->
+        num
+      :error ->
+        raise "can not convert prefetch_count to an integer"
+    end
+  end
+
   def get_prefetch_count(num) when is_integer(num) do
     num
   end
