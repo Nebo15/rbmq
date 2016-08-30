@@ -16,12 +16,12 @@ defmodule Rbmq do
   @doc """
     Spawn new process with Consumer
   """
-  defdelegate spawn_consumer(name, queue, callback, exchange \\ nil), to:  Rbmq.SupervisorConsumer
+  defdelegate spawn_consumer(name, queue, callback, exchange \\ nil), to: Rbmq.SupervisorConsumer
 
   @doc """
     Spawn new process with Producer
   """
-  defdelegate spawn_producer(name, queue, prefetch_count \\ nil, exchange \\ nil), to:  Rbmq.SupervisorProducer
+  defdelegate spawn_producer(name, queue, prefetch_count \\ nil, exchange \\ nil), to: Rbmq.SupervisorProducer
 
   @doc """
     Publish message into queue.
