@@ -1,4 +1,9 @@
 defmodule RBMQ.Connector do
+  @moduledoc """
+  Helper functions to manage connections with AQMP.
+
+  This module produces verbose debug logs.
+  """
   use AMQP
   require Logger
 
@@ -52,7 +57,7 @@ defmodule RBMQ.Connector do
         {:error, "AQMP authorization failed: #{inspect message}"}
       {:error, reason} ->
         Logger.error "Error during AQMP connection establishing, opts: #{inspect conn_opts}"
-        {:error, "#{inspect reason}"}
+        {:error, inspect(reason)}
     end
   end
 
@@ -80,7 +85,7 @@ defmodule RBMQ.Connector do
         {:ok, chan}
       {:error, reason} ->
         Logger.error "Can't create new AQMP channel"
-        {:error, "#{inspect reason}"}
+        {:error, inspect(reason)}
     end
   end
 

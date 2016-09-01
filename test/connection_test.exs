@@ -94,7 +94,6 @@ defmodule RBMQ.ConnectionTest do
     assert :ok = AMQP.Connection.close(conn)
   end
 
-
   test "returns channel with queue config" do
     TestConnectionWithQueue.start_link
     assert {:ok, _} = TestConnectionWithQueue.spawn_channel(:somename)
@@ -102,7 +101,6 @@ defmodule RBMQ.ConnectionTest do
     %AMQP.Channel{conn: conn} = TestConnectionWithQueue.get_channel(:somename)
     assert :ok = AMQP.Connection.close(conn)
   end
-
 
   test "returns channel with exchange config" do
     TestConnectionWithExchange.start_link
