@@ -17,9 +17,11 @@ defmodule RBMQ.Connection.Channel do
   def init(opts) do
     chan_opts = Keyword.get(opts, :config, [])
 
-    opts[:connection]
+    {:ok, chan} = opts[:connection]
     |> Connector.open_channel
     |> configure(chan_opts)
+
+    {:ok, [channel: chan, config: chan_opts]}
   end
 
   defp configure(chan, chan_opts) do
@@ -78,7 +80,14 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def set_config(pid, config) do
-    GenServer.call(pid, {:configure, config})
+    GenServer.call(pid, {:apply_config, config})
+  end
+
+  @doc """
+  Returns current configuration of a channel.
+  """
+  def get_config(pid) do
+    GenServer.call(pid, :get_config)
   end
 
   @doc """
@@ -90,33 +99,46 @@ defmodule RBMQ.Connection.Channel do
   end
 
   @doc false
-  def handle_call(:get, _from, chan) do
-    {:reply, chan, chan}
+  def handle_cast(:close, [channel: chan]) do
+    Connector.close_channel(chan)
+    {:stop, :normal, :ok}
   end
 
   @doc false
-  def handle_call({:reconnect, conn}, _from, _) do
-    chan = init(conn)
-
-    {:reply, :ok, chan}
+  def handle_call(:get, _from, state) do
+    {:reply, state[:channel], state}
   end
 
   @doc false
-  def handle_call({:configure, config}, _from, chan) do
+  def handle_call(:get_config, _from, state) do
+    {:reply, state[:config], state}
+  end
+
+  @doc false
+  def handle_call({:reconnect, conn}, _from, [config: chan_opts]) do
+    state = init([
+      connection: conn,
+      config: chan_opts
+    ])
+
+    {:reply, :ok, state}
+  end
+
+  @doc false
+  def handle_call({:apply_config, config}, _from, [channel: chan, config: chan_opts]) do
     {:ok, chan} = {:ok, chan}
     |> configure(config)
 
-    {:reply, :ok, chan}
+    state = [
+      channel: chan,
+      config: Keyword.merge(chan_opts, config)
+    ]
+
+    {:reply, :ok, state}
   end
 
   @doc false
-  def handle_call({:run, callback}, _from, chan) when is_function(callback) do
-    {:reply, callback.(chan), chan}
-  end
-
-  @doc false
-  def handle_cast(:close, chan) do
-    Connector.close_channel(chan)
-    {:stop, :normal, :ok}
+  def handle_call({:run, callback}, _from, state) when is_function(callback) do
+    {:reply, callback.(state[:channel]), state}
   end
 end
