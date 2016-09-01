@@ -85,6 +85,14 @@ defmodule RBMQ.Connector do
   end
 
   @doc """
+  Gracefully close AQMP channel.
+  """
+  def close_channel(%Channel{} = chan) do
+    Logger.debug "Closing AQMP channel"
+    Channel.close(chan)
+  end
+
+  @doc """
   Set channel QOS policy. Especially useful when you want to limit number of
   unacknowledged request per worker.
 

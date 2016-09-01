@@ -56,6 +56,12 @@ defmodule RBMQ.Connection do
         RBMQ.Connection.Channel.get(name)
       end
 
+      def close_channel(name) do
+        pid = Process.whereis(name)
+        :ok = RBMQ.Connection.Channel.close(pid)
+        Supervisor.terminate_child(__MODULE__, pid)
+      end
+
       def init(conn) do
         children = [
           worker(RBMQ.Connection.Channel, [conn], restart: :transient)

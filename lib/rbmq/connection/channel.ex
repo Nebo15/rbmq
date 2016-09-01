@@ -1,4 +1,10 @@
 defmodule RBMQ.Connection.Channel do
+  @moduledoc """
+  AQMP channel server.
+
+  Whenever connection gets rest channel reinitializes itself.
+  """
+
   use GenServer
   require Logger
   alias RBMQ.Connector
@@ -50,8 +56,14 @@ defmodule RBMQ.Connection.Channel do
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
+  @doc false
   def get(pid) do
     GenServer.call(pid, :get)
+  end
+
+  @doc false
+  def close(pid) do
+    GenServer.cast(pid, :close)
   end
 
   @doc false
@@ -77,8 +89,9 @@ defmodule RBMQ.Connection.Channel do
   def handle_call({:run, callback}, _from, chan) when is_function(callback) do
     {:reply, callback.(chan), chan}
   end
-end
 
-# defmodule RBMQ.Producer do
-#   RBMQ.Connection
-# end
+  def handle_cast(:close, chan) do
+    Connector.close_channel(chan)
+    {:stop, :normal, :ok}
+  end
+end

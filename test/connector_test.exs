@@ -28,12 +28,20 @@ defmodule RBMQ.ConnectorTest do
     end
   end
 
-    test "invalid vhost raise exception" do
+  test "invalid vhost raise exception" do
     assert_raise RuntimeError, ~r/AQMP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, password: "1234"])
       |> open_connection!
     end
+  end
+
+  test "channel closes" do
+    RBMQ.ConfigTest
+    |> RBMQ.Config.get([otp_app: :rbmq])
+    |> open_connection!
+    |> open_channel!
+    |> close_channel
   end
 
   test "producer connection initializes" do
