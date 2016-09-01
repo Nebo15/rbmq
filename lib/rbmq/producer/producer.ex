@@ -9,6 +9,7 @@ defmodule RBMQ.GenericProducer do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       use GenServer
+      require Logger
 
       @connection Keyword.get(opts, :connection)
       @channel_name String.to_atom("#{__MODULE__}.Channel")
@@ -45,18 +46,44 @@ defmodule RBMQ.GenericProducer do
         GenServer.call(__MODULE__, {:publish, data})
       end
 
+      @doc """
+      Get queue status.
+      """
+      def status do
+        GenServer.call(__MODULE__, :status)
+      end
+
+      defp config do
+        RBMQ.Connection.Channel.get_config(@channel_name)
+      end
+
       @doc false
       def handle_call({:publish, data}, _from, chan) do
         case Poison.encode(data) do
           {:ok, encoded_data} ->
-            _publish(chan, encoded_data)
+            delayed_publish(chan, encoded_data)
           {:error, _} = err ->
             {:reply, err, chan}
         end
       end
 
+      @doc false
+      def handle_call(:status, _from, chan) do
+        {:reply, AMQP.Queue.status(chan, config[:queue][:name]), chan}
+      end
+
+      defp delayed_publish(chan, data) do
+        case Process.alive?(chan.pid) do
+          true ->
+            _publish(chan, data)
+          _ ->
+            Logger.warn("Channel #{inspect @channel_name} is dead, waiting till it gets restarted")
+            :timer.sleep(3_000)
+            delayed_publish(chan, data)
+        end
+      end
+
       defp _publish(chan, data) do
-        config = RBMQ.Connection.Channel.get_config(@channel_name)
         is_persistent = Keyword.get(config[:queue], :durable, false)
 
         case AMQP.Basic.publish(chan, config[:exchange][:name], config[:queue][:routing_key], data, [mandatory: true, persistent: is_persistent]) do
