@@ -56,6 +56,10 @@ defmodule RBMQ.Connection do
         RBMQ.Connection.Channel.get(name)
       end
 
+      def configure_channel(name, config) do
+        RBMQ.Connection.Channel.set_config(name, config)
+      end
+
       def close_channel(name) do
         pid = Process.whereis(name)
         :ok = RBMQ.Connection.Channel.close(pid)

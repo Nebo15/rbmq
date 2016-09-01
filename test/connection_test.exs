@@ -86,6 +86,31 @@ defmodule RBMQ.ConnectionTest do
     assert :ok = AMQP.Connection.close(conn)
   end
 
+  test "configures channel" do
+    TestConnectionWithoutConfig.start_link
+    assert {:ok, _} = TestConnectionWithoutConfig.spawn_channel(:somename)
+    %AMQP.Channel{conn: conn} = TestConnectionWithoutConfig.get_channel(:somename)
+
+    conf = [
+      queue: [
+        name: "decision_queue",
+        error_name: "decision_queue_errors",
+        routing_key: "decision_queue"
+      ],
+      exchange: [
+        name: "queue_exchange",
+        type: :direct,
+        durable: true,
+      ],
+      qos: [
+        prefetch_count: 100
+      ]
+    ]
+
+    assert :ok = TestConnectionWithoutConfig.configure_channel(:somename, conf)
+    assert :ok = AMQP.Connection.close(conn)
+  end
+
   test "returns channel with qos config" do
     TestConnectionWithQOS.start_link
     assert {:ok, _} = TestConnectionWithQOS.spawn_channel(:somename)

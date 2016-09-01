@@ -1,5 +1,5 @@
 defmodule RBMQ.ConfigTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   doctest RBMQ.Config
 
   test "parse config" do

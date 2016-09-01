@@ -1,5 +1,5 @@
 defmodule RBMQ.ConnectorTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   import RBMQ.Connector
   use AMQP
   doctest RBMQ.Connector
