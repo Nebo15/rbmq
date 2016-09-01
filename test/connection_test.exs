@@ -7,12 +7,12 @@ defmodule RBMQ.ConnectionTest do
     use RBMQ.Connection,
       otp_app: :rbmq,
       queue: [
-        name: "decision_queue",
-        error_name: "decision_queue_errors",
-        routing_key: "decision_queue"
+        name: "test_qeueue_1",
+        error_name: "test_qeueue_1_error",
+        routing_key: "test_qeueue_1"
       ],
       exchange: [
-        name: "queue_exchange",
+        name: "test_queue_1_exchange",
         type: :direct,
         durable: true,
       ],
@@ -38,9 +38,9 @@ defmodule RBMQ.ConnectionTest do
     use RBMQ.Connection,
       otp_app: :rbmq,
       queue: [
-        name: "decision_queue",
-        error_name: "decision_queue_errors",
-        routing_key: "decision_queue"
+        name: "test_qeueue_2",
+        error_name: "test_qeueue_2_error",
+        routing_key: "test_qeueue_2"
       ]
   end
 
@@ -48,7 +48,7 @@ defmodule RBMQ.ConnectionTest do
     use RBMQ.Connection,
       otp_app: :rbmq,
       exchange: [
-        name: "queue_exchange",
+        name: "test_queue_2_exchange",
         type: :direct,
         durable: true,
       ]
@@ -58,12 +58,12 @@ defmodule RBMQ.ConnectionTest do
     use RBMQ.Connection,
       otp_app: :rbmq,
       queue: [
-        name: "decision_queue",
-        error_name: "decision_queue_errors",
-        routing_key: "decision_queue"
+        name: "test_qeueue_3",
+        error_name: "test_qeueue_3_error",
+        routing_key: "test_qeueue_2"
       ],
       exchange: [
-        name: "queue_exchange",
+        name: "test_qeueue_2_exchange",
         type: :direct,
         durable: true,
       ]
@@ -93,12 +93,12 @@ defmodule RBMQ.ConnectionTest do
 
     conf = [
       queue: [
-        name: "decision_queue",
-        error_name: "decision_queue_errors",
-        routing_key: "decision_queue"
+        name: "test_qeueue_4",
+        error_name: "test_qeueue_4_error",
+        routing_key: "test_qeueue_4"
       ],
       exchange: [
-        name: "queue_exchange",
+        name: "test_qeueue_2_exchange",
         type: :direct,
         durable: true,
       ],
@@ -145,11 +145,18 @@ defmodule RBMQ.ConnectionTest do
 
   test "spawns multiple channels" do
     TestConnection.start_link
+
     TestConnection.spawn_channel(:somename)
     assert %AMQP.Channel{} = TestConnection.get_channel(:somename)
 
+    assert Supervisor.count_children(TestConnection).workers == 1
+    assert Supervisor.count_children(TestConnection).active == 1
+
     TestConnection.spawn_channel(:othername)
     assert %AMQP.Channel{conn: conn} = TestConnection.get_channel(:othername)
+
+    assert Supervisor.count_children(TestConnection).workers == 2
+    assert Supervisor.count_children(TestConnection).active == 2
 
     assert :ok = AMQP.Connection.close(conn)
   end
@@ -175,7 +182,7 @@ defmodule RBMQ.ConnectionTest do
   #   :timer.sleep(200)
 
   #   assert %AMQP.Channel{} = chan = TestConnection.get_channel(:somename)
-  #   IO.inspect AMQP.Channel.status(chan, "decision_queue")
+  #   IO.inspect AMQP.Channel.status(chan, "test_qeueue")
   # end
 
   test "closes channels" do

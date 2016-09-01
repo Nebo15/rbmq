@@ -45,8 +45,8 @@ defmodule RBMQ.ConnectorTest do
   end
 
   test "producer connection initializes" do
-    queue_name = "test_queue"
-    queue_exchange = "test_exchange"
+    queue_name = "test_queue_for_producer"
+    queue_exchange = "test_exchange_for_producer"
 
     RBMQ.ConfigTest
     |> RBMQ.Config.get([otp_app: :rbmq])
@@ -58,7 +58,7 @@ defmodule RBMQ.ConnectorTest do
   end
 
   test "consumer connection initializes" do
-    queue_name = "test_queue"
+    queue_name = "test_queue_for_consumer"
 
     RBMQ.ConfigTest
     |> RBMQ.Config.get([otp_app: :rbmq])
