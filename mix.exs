@@ -3,7 +3,7 @@ defmodule Rbmq.Mixfile do
 
   def project do
     [app: :rbmq,
-     version: "0.2.3",
+     version: "0.3.0",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -16,7 +16,7 @@ defmodule Rbmq.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :amqp, :gproc, :postgrex]]
+    [applications: [:logger, :amqp, :gproc]]
   end
 
   # Dependencies can be Hex packages:
@@ -29,8 +29,7 @@ defmodule Rbmq.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:amqp_client, git: "https://github.com/dsrosario/amqp_client.git", branch: "erlang_otp_19", override: true},
-    {:postgrex, ">= 0.0.0"},
+    [{:amqp_client, git: "https://github.com/jbrisbin/amqp_client.git", branch: "master", override: true},
     {:poison, "~> 2.0"},
     {:gproc, "~> 0.5.0"},
     {:amqp, "0.1.4"},
@@ -41,7 +40,7 @@ defmodule Rbmq.Mixfile do
 
   defp description do
     """
-    Simple API for spawn RabbitMQ Producers and Consumers.
+    Simple API for spawning RabbitMQ Producers and Consumers.
     """
   end
 
@@ -49,7 +48,7 @@ defmodule Rbmq.Mixfile do
     [
      name: :rbmq,
      files: ["lib", "mix.exs", "README.md", "LICENSE.md"],
-     maintainers: ["Pavel Vesnin"],
+     maintainers: ["Pavel Vesnin", "Andrew Dryga"],
      licenses: ["MIT"],
      links: %{"GitHub" => "https://github.com/Nebo15/rbmq"}]
   end

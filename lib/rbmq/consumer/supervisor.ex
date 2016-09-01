@@ -21,41 +21,81 @@ defmodule Rbmq.SupervisorConsumer do
   end
 end
 
-defmodule RBMQ.NewProducer do
-  @type t :: module
+# defmodule AP.BatchQueueProducer do
 
-  @doc false
-  defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts] do
-      use AMQP
+#   use RBMQ.NewProducer, [
+#     otp_app: :ap,
+#     queue: [
+#       name: "decision_queue",
+#       error_name: "decision_queue_errors",
+#       routing_key: "decision_queue"
+#     ],
+#     exchange: [
+#       name: "queue_exchange",
+#       type: :direct,
+#       durable: true
+#     ]
+#   ]
 
-      otp_app = RBMQ.Config.get_otp_app(opts)
-      config = RBMQ.Config.get(__MODULE__, otp_app)
+#   def cast_publish() do
 
-      @otp_app otp_app
-      @config config
-      @conn Connection.open(@config)
+#   end
 
-      def config do
-        RBMQ.Config.get(__MODULE__, @otp_app)
-      end
+#   def call_publush() do
 
-      def start_link(repo, otp_app, adapter, opts) do
-        opts = config(repo, otp_app, opts)
-        name = opts[:name] || Application.get_env(otp_app, repo)[:name] || repo
-        Supervisor.start_link(__MODULE__, {repo, otp_app, adapter, opts}, [name: name])
-      end
+#   end
+# end
 
-      def start_link(opts \\ []) do
-        Ecto.Repo.Supervisor.start_link(__MODULE__, @otp_app, @adapter, opts)
-      end
+# defmodule RBMQ.Producer do
+#   @type t :: module
 
-      def stop(pid, timeout \\ 5000) do
-        Supervisor.stop(pid, :normal, timeout)
-      end
-    end
-  end
-end
+#   @doc false
+#   defmacro __using__(opts) do
+#     quote bind_quoted: [opts: opts] do
+#       import RBMQ.Connector
+
+#       @config RBMQ.Config.get(__MODULE__, opts)
+
+#       cond do
+#         !Keyword.has_key?(@config, :queue) ->
+#           raise "queue config is not set in #{inspect __MODULE__}"
+#         !Keyword.has_key?(@config[:queue], :name) ->
+#           raise "queue name is not set in #{inspect __MODULE__}"
+#         !Keyword.has_key?(@config, :exchange) ->
+#           raise "exchange config is not set in #{inspect __MODULE__}"
+#         !Keyword.has_key?(@config[:exchange], :name) ->
+#           raise "exchange name is not set in #{inspect __MODULE__}"
+#         !Keyword.has_key?(@config[:exchange], :name) ->
+#           raise "exchange name is not set in #{inspect __MODULE__}"
+#       end
+
+#       def config do
+#         @config
+#       end
+
+#       defp conn do
+#         config
+#         |> open_connection!
+#         |> open_channel!
+
+#       end
+
+#       # def start_link(repo, otp_app, adapter, opts) do
+#       #   opts = config(repo, otp_app, opts)
+#       #   name = opts[:name] || Application.get_env(otp_app, repo)[:name] || repo
+#       #   Supervisor.start_link(__MODULE__, {repo, otp_app, adapter, opts}, [name: name])
+#       # end
+
+#       # def start_link(opts \\ []) do
+#       #   Ecto.Repo.Supervisor.start_link(__MODULE__, @otp_app, @adapter, opts)
+#       # end
+
+#       # def stop(pid, timeout \\ 5000) do
+#       #   Supervisor.stop(pid, :normal, timeout)
+#       # end
+#     end
+#   end
+# end
 
 # defmodule RBMQ.Producer.Supervisor do
 #   @moduledoc false
@@ -91,12 +131,13 @@ end
 #   import RBMQ.Connector
 
 #   @doc false
-#   def init({conn, {queue, error_queue, queue_opts}, exchange}) do
-#     Channel.open(conn)
-#     |> declare_queue(queue, error_queue, queue_opts)
-#     |>
+#   def init({chan, config}) do
+#     chan = chan
+#     |> declare_queue(config[:queue][:name], config[:queue][:error_name], config[:queue])
+#     |> declare_exchange(config[:exchange][:name], config[:exchange][:type], config[:exchange])
+#     |> bind_queue(config[:queue][:name], config[:exchange][:name], [routing_key: config[:queue][:routing_key] || ""])
 
-#     Exchange.direct(chan, exchange, durable: true)
+#     {:ok, chan}
 #   end
 
 #   def start_link(state, opts \\ []) do
@@ -112,18 +153,18 @@ end
 #   end
 # end
 
-# {queue, exchange, prefetch_count}
+# # {queue, exchange, prefetch_count}
 
-# {:ok, conn} = Connection.open(get_amqp_params)
-#     {:ok, chan} = Channel.open(conn)
+# # {:ok, conn} = Connection.open(get_amqp_params)
+# #     {:ok, chan} = Channel.open(conn)
 
-#     Queue.declare(chan, queue_err, durable: true)
-#     Queue.declare(chan, queue, durable: true, arguments: [
-#       {"x-dead-letter-exchange", :longstr, ""},
-#       {"x-dead-letter-routing-key", :longstr, queue_err}
-#     ])
-#     Exchange.direct(chan, exchange, durable: true)
-#     Queue.bind(chan, queue, exchange, [routing_key: queue])
-#     AMQP.Confirm.select(chan)
+# #     Queue.declare(chan, queue_err, durable: true)
+# #     Queue.declare(chan, queue, durable: true, arguments: [
+# #       {"x-dead-letter-exchange", :longstr, ""},
+# #       {"x-dead-letter-routing-key", :longstr, queue_err}
+# #     ])
+# #     Exchange.direct(chan, exchange, durable: true)
+# #     Queue.bind(chan, queue, exchange, [routing_key: queue])
+# #     AMQP.Confirm.select(chan)
 
-#     {:ok, {chan, [exchange: exchange]}}
+# #     {:ok, {chan, [exchange: exchange]}}

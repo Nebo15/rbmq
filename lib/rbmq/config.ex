@@ -3,11 +3,6 @@ defmodule RBMQ.Config do
   Configuration helpers for RBMQ package.
   """
 
-  @doc false
-  def get_otp_app(opts) do
-    Keyword.fetch!(opts, :otp_app)
-  end
-
   @defaults [
     host: {:system, "AQMP_HOST", "localhost"},
     port: {:system, "AQMP_PORT", 5672},

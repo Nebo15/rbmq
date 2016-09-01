@@ -27,17 +27,17 @@ defmodule Rbmq do
     Publish message into queue.
     Producer with specified queue must already be started
   """
-  defdelegate publish(name, queue, data), to:  Rbmq.Producer
+  defdelegate publish(name, queue, data), to: Rbmq.Producer
 
   @doc """
     Get queue status.
     Consumer with specified queue must already be started
   """
-  defdelegate status(name, queue), to:  Rbmq.Consumer
+  defdelegate status(name, queue), to: Rbmq.Consumer
 
   @doc """
     Get message from queue.
     Consumer with specified queue must already be started
   """
-  defdelegate get(name, queue), to:  Rbmq.Consumer
+  defdelegate get(name, queue), to: Rbmq.Consumer
 end

@@ -62,13 +62,25 @@ defmodule RBMQ.Connector do
   See: https://hexdocs.pm/amqp/AMQP.Channel.html#open/1
   """
   def open_channel!(%Connection{} = conn) do
+    case open_channel(conn) do
+      {:ok, %Channel{} = chan} ->
+        chan
+      {:error, message} ->
+        raise message
+    end
+  end
+
+  @doc """
+  Same as `open_channel!/1`, but returns {:ok, conn} or {:error, reason} tuples.
+  """
+  def open_channel(%Connection{} = conn) do
     Logger.debug "Opening new AQMP channel"
     case Channel.open(conn) do
-      {:ok, chan} ->
-        chan
+      {:ok, %Channel{} = chan} ->
+        {:ok, chan}
       {:error, reason} ->
         Logger.error "Can't create new AQMP channel"
-        raise reason
+        {:error, "#{inspect reason}"}
     end
   end
 
