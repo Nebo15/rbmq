@@ -14,8 +14,11 @@ defmodule RBMQ.Producer do
         raise "You need to set queue routing key in #{__MODULE__} options."
       end
 
-      unless is_binary(@channel_conf[:queue][:routing_key]) do
-        raise "Queue routing key for #{__MODULE__} must be a string."
+      case @channel_conf[:queue][:routing_key] do
+        {:system, _, _} -> :ok
+        {:system, _} -> :ok
+        str when is_binary(str) -> :ok
+        unknown -> raise "Queue routing key for #{__MODULE__} must be a string or env link, '#{inspect unknown}' given."
       end
 
       unless @channel_conf[:exchange] do
@@ -26,8 +29,11 @@ defmodule RBMQ.Producer do
         raise "You need to set exchange name in #{__MODULE__} options."
       end
 
-      unless is_binary(@channel_conf[:exchange][:name]) do
-        raise "Exchange name key for #{__MODULE__} must be a string."
+      case @channel_conf[:exchange][:name] do
+        {:system, _, _} -> :ok
+        {:system, _} -> :ok
+        str when is_binary(str) -> :ok
+        unknown -> raise "Exchange name key for #{__MODULE__} must be a string or env link, '#{inspect unknown}' given."
       end
 
       unless @channel_conf[:exchange][:type] do

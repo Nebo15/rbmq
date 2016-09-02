@@ -32,8 +32,11 @@ defmodule RBMQ.GenQueue do
         raise "You need to set queue name in #{__MODULE__} options."
       end
 
-      unless is_binary(@channel_conf[:queue][:name]) do
-        raise "Queue name for #{__MODULE__} must be a string."
+      case @channel_conf[:queue][:name] do
+        {:system, _, _} -> :ok
+        {:system, _} -> :ok
+        str when is_binary(str) -> :ok
+        unknown -> raise "Queue name for #{__MODULE__} must be a string or env link, '#{inspect unknown}' given."
       end
 
       def start_link do
