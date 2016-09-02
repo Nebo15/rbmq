@@ -18,7 +18,7 @@ defmodule RBMQ.Connection do
         case Connector.open_connection(@config) do
           {:ok, conn} ->
             # Get notifications when the connection goes down
-            Process.monitor(conn.pid)
+            # Process.monitor(conn.pid)
             conn
           {:error, _} ->
             Logger.warn "Trying to restart connection in #{inspect timeout} microseconds"
@@ -28,8 +28,9 @@ defmodule RBMQ.Connection do
         end
       end
 
-      def handle_info({:DOWN, _, :process, _pid, _reason}, state) do
-        Logger.error "AQMP connection went down"
+      def handle_info({:DOWN, monitor_ref, :process, pid, _reason}) do
+        Logger.error "AQMP connection #{inspect pid} went down"
+        Process.demonitor(monitor_ref, [:flush])
 
         conn = [connection: connect(), config: @worker_config]
 
@@ -43,11 +44,11 @@ defmodule RBMQ.Connection do
           RBMQ.Connection.Channel.reconnect(child, conn)
         end)
 
-        {:noreply, state}
+        :noreply
       end
 
       def start_link do
-        Supervisor.start_link(__MODULE__, [connection: connect(), config: @worker_config], name: __MODULE__)
+        Supervisor.start_link(__MODULE__, [], name: __MODULE__)
       end
 
       def spawn_channel(name) do
@@ -68,9 +69,11 @@ defmodule RBMQ.Connection do
         Supervisor.terminate_child(__MODULE__, pid)
       end
 
-      def init(conn) do
+      def init(_conf) do
+        conf = [connection: connect(), config: @worker_config]
+
         children = [
-          worker(RBMQ.Connection.Channel, [conn], restart: :transient)
+          worker(RBMQ.Connection.Channel, [conf], restart: :transient)
         ]
 
         supervise(children, strategy: :simple_one_for_one)

@@ -1,5 +1,5 @@
 defmodule RBMQ.ConnectionTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   import RBMQ.Connection
   doctest RBMQ.Connection
 
@@ -161,30 +161,28 @@ defmodule RBMQ.ConnectionTest do
     assert :ok = AMQP.Connection.close(conn)
   end
 
-  # TODO: how to test killed channels?
+  # # TODO: how to test killed channels?
   # test "restarts connection" do
-  #   TestConnection.start_link
-  #   TestConnection.spawn_channel(:somename)
+  #   TestConnectionWithoutConfig.start_link
+  #   TestConnectionWithoutConfig.spawn_channel(:somename)
 
-  #   %AMQP.Channel{conn: %AMQP.Connection{} = conn} = TestConnection.get_channel(:somename)
-  #   # IO.inspect chan_pid
+  #   %AMQP.Channel{conn: conn} = TestConnectionWithoutConfig.get_channel(:somename)
 
   #   # :timer.sleep(20000)
 
-  # Kill connection, it dies with channels
-  # Process.exit(context[:channel].pid, :kill)
+  #   # Kill connection, it dies with channels
+  #   ref = Process.monitor(conn.pid)
+  #   AMQP.Connection.close(conn)
+  #   assert_receive {:DOWN, ^ref, _, _, _}
+
+  #   # Wait till channel restarts
+  #   :timer.sleep(5000)
 
   #   # Close connection
   #   # AMQP.Connection.close(conn)
-  #   Process.exit(conn.pid, :kill)
-  #   # ref = Process.monitor(conn.pid)
-  #   # assert_receive {:DOWN, ^ref, _, _, _}
+  #   # Process.exit(conn.pid, :kill)
 
-
-  #   # Wait till it respawns
-  #   :timer.sleep(200)
-
-  #   assert %AMQP.Channel{} = chan = TestConnection.get_channel(:somename)
+  #   assert %AMQP.Channel{} = chan = TestConnectionWithoutConfig.get_channel(:somename)
   #   IO.inspect AMQP.Channel.status(chan, "test_qeueue")
   # end
 
@@ -219,6 +217,47 @@ defmodule RBMQ.ConnectionTest do
     :timer.sleep(100)
 
     assert %AMQP.Channel{conn: conn} = TestConnection.get_channel(:somename)
+
+    assert :ok = AMQP.Connection.close(conn)
+  end
+
+  test "restarts bare channels without config loss" do
+    TestConnectionWithoutConfig.start_link
+    TestConnectionWithoutConfig.spawn_channel(:somename)
+    initial_channel = TestConnectionWithoutConfig.get_channel(:somename)
+
+    # Configure channel
+    conf = [
+      queue: [
+        name: "test_qeueue_6",
+        error_name: "test_qeueue_6_error",
+        routing_key: "test_qeueue_6"
+      ],
+      exchange: [
+        name: "test_qeueue_2_exchange",
+        type: :direct,
+        durable: true,
+      ],
+      qos: [
+        prefetch_count: 100
+      ]
+    ]
+    TestConnectionWithoutConfig.configure_channel(:somename, conf)
+
+    ref = Process.monitor(initial_channel.pid)
+    AMQP.Channel.close(initial_channel)
+    assert_receive {:DOWN, ^ref, _, _, _}
+
+    # Wait till channel restarts
+    :timer.sleep(1000)
+
+    assert %AMQP.Channel{conn: conn} = new_channel = TestConnectionWithoutConfig.get_channel(:somename)
+
+    # New channel should work properly
+    assert AMQP.Queue.message_count(new_channel, conf[:queue][:name]) == 0
+
+    # And it should be a different channel
+    refute initial_channel.pid == new_channel.pid
 
     assert :ok = AMQP.Connection.close(conn)
   end

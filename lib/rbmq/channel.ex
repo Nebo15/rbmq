@@ -10,37 +10,28 @@ defmodule RBMQ.Connection.Channel do
   alias RBMQ.Connector
 
   def start_link(opts, name \\ []) do
-    # IO.inspect "Linking !"
-    # IO.inspect opts
-    # IO.inspect name
-    # IO.inspect "========"
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc false
   def init(opts) do
-    {:ok, _init(opts)}
-  end
-
-  defp _init(opts) do
     chan_opts = opts
     |> Keyword.delete(:channel)
     |> Keyword.get(:config, [])
 
-    # IO.inspect "Open channel #{inspect chan_opts}:"
+    case Connector.open_channel(opts[:connection]) do
+      {:error, :conn_dead} ->
+        Logger.error "Connection #{inspect opts[:connection].pid} is dead, waiting for supervisor actions.."
+        {:ok, [config: chan_opts]}
+      {:ok, chan} ->
+        configure(chan, chan_opts)
 
-    # :timer.sleep(100)
-    # IO.inspect Connector.open_channel(opts[:connection])
+        # Monitor channel state
+        # Process.flag(:trap_exit, true) # uncomment me?
+        Process.monitor(chan.pid)
 
-    {:ok, chan} = Connector.open_channel(opts[:connection])
-
-    configure(chan, chan_opts)
-
-    # Monitor channel state
-    # IO.inspect "Start monitor"
-    Process.monitor(chan.pid)
-
-    [channel: chan, config: chan_opts, connection: opts[:connection]]
+        {:ok, [channel: chan, config: chan_opts, connection: opts[:connection]]}
+    end
   end
 
   defp configure(chan, chan_opts) do
@@ -116,31 +107,25 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def handle_info({:DOWN, monitor_ref, :process, pid, reason}, state) do
-    Logger.error "AMQP channel went down: #{inspect pid}"
-    # AMQP.Channel.close(%AMQP.Channel{pid: pid, conn: state[:connection]})
-    Process.demonitor(monitor_ref)
-    :timer.sleep(100)
+    Logger.error "AMQP channel #{inspect pid} went down with reason #{inspect reason}."
+    Process.demonitor(monitor_ref, [:flush])
+    GenServer.cast(self(), {:restart, reason})
+    {:noreply, state}
+  end
 
-    case reason do
-      :normal ->
-        {:stop, :normal, :ok}
-      _ ->
-        {:stop, :channel_down, state}
-        # IO.inspect reason
-        # # IO.inspect state
+  @doc false
+  def handle_cast({:restart, _reason}, state) do
+    # case reason do
+    #   :normal ->
+    #     Logger.error "AMQP channel won't be restarted."
+    #     {:stop, :normal, state}
+    #   _ ->
+        {:ok, state} = state
+        |> Keyword.delete(:channel)
+        |> init
 
-        # # :timer.sleep(1_000)
-
-        # state = state
-        # |> Keyword.delete(:channel)
-        # |> _init
-
-        # IO.inspect "Got new state"
-        # # IO.inspect state
-
-        # {:noreply, state}
-        # # {:stop, :child_dead, state}
-    end
+        {:noreply, state}
+    # end
   end
 
   @doc false
@@ -161,7 +146,7 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def handle_call({:reconnect, conn}, _from, [config: chan_opts]) do
-    state = _init([
+    state = init([
       connection: conn,
       config: chan_opts
     ])

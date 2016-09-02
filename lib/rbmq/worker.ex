@@ -37,7 +37,6 @@ defmodule RBMQ.Worker do
       end
 
       def init_worker(chan, _opts) do
-        IO.inspect "parent"
         chan
       end
 

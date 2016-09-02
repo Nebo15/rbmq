@@ -1,5 +1,5 @@
 defmodule RBMQ.ChannelTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   import RBMQ.Connection
   doctest RBMQ.Connection.Channel
 
@@ -39,6 +39,8 @@ defmodule RBMQ.ChannelTest do
       :ok
     end)
   end
+
+  # TODO: configuration tests
 
   # Channel should not loose its configuration when AQMP channel dies
   # test "recreates channels", context do

@@ -39,9 +39,8 @@ defmodule RBMQ.ConsumerTest do
         prefetch_count: 10
       ]
 
-    def consume(payload, tag, _redelivered) do
-      IO.inspect payload
-      IO.inspect tag
+    def consume(_payload, [tag: tag, redelivered?: _redelivered, channel: chan]) do
+      ack(chan, tag)
     end
   end
 
@@ -58,27 +57,18 @@ defmodule RBMQ.ConsumerTest do
     [channel: chan]
   end
 
-  test "read message" do
+  test "read messages" do
+    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status
+
     assert :ok == TestProducer.publish(%{example: true})
     assert :ok == TestProducer.publish(1)
     assert :ok == TestProducer.publish("string")
     assert :ok == TestProducer.publish([:list])
     assert :ok == TestProducer.publish(false)
+
+
+    :timer.sleep(100)
+
+    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status
   end
-
-  # test "rapidly publish messages" do
-  #   TestProducer.publish(%{example: true})
-
-  #   for n <- 1..1000 do
-  #     assert :ok == TestProducer.publish(n)
-  #   end
-
-  #   # Doesn't spawn additional connections
-  #   assert Supervisor.count_children(ProducerTestConnection).active == 1
-  #   assert Supervisor.count_children(ProducerTestConnection).workers == 1
-
-  #   :timer.sleep(500)
-
-  #   assert {:ok, %{message_count: 1001, queue: @queue}} = TestProducer.status
-  # end
 end

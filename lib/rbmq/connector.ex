@@ -80,9 +80,22 @@ defmodule RBMQ.Connector do
   """
   def open_channel(%Connection{} = conn) do
     Logger.debug "Opening new AQMP channel for conn #{inspect conn.pid}"
+    case Process.alive?(conn.pid) do
+      false ->
+        {:error, :conn_dead}
+      true ->
+        _open_channel(conn)
+    end
+  end
+
+  defp _open_channel(conn) do
     case Channel.open(conn) do
       {:ok, %Channel{} = chan} ->
         {:ok, chan}
+      :closing ->
+        Logger.debug "Channel is closing, retry.."
+        :timer.sleep(1_000)
+        open_channel(conn)
       {:error, reason} ->
         Logger.error "Can't create new AQMP channel"
         {:error, inspect(reason)}
