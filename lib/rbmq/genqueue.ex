@@ -15,6 +15,18 @@ defmodule RBMQ.GenQueue do
         raise "You need to implement connection module and pass it in :connection option."
       end
 
+      unless @channel_conf[:queue] do
+        raise "You need to configure queue in #{__MODULE__} options."
+      end
+
+      unless @channel_conf[:queue][:name] do
+        raise "You need to set queue name in #{__MODULE__} options."
+      end
+
+      unless is_binary(@channel_conf[:queue][:name]) do
+        raise "Queue name for #{__MODULE__} must be a string."
+      end
+
       def start_link do
         GenServer.start_link(__MODULE__, @channel_conf, name: __MODULE__)
       end

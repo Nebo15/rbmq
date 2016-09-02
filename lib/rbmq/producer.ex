@@ -10,6 +10,34 @@ defmodule RBMQ.Producer do
     quote bind_quoted: [opts: opts] do
       use RBMQ.GenQueue, opts
 
+      unless @channel_conf[:queue][:routing_key] do
+        raise "You need to set queue routing key in #{__MODULE__} options."
+      end
+
+      unless is_binary(@channel_conf[:queue][:routing_key]) do
+        raise "Queue routing key for #{__MODULE__} must be a string."
+      end
+
+      unless @channel_conf[:exchange] do
+        raise "You need to configure exchange in #{__MODULE__} options."
+      end
+
+      unless @channel_conf[:exchange][:name] do
+        raise "You need to set exchange name in #{__MODULE__} options."
+      end
+
+      unless is_binary(@channel_conf[:exchange][:name]) do
+        raise "Exchange name key for #{__MODULE__} must be a string."
+      end
+
+      unless @channel_conf[:exchange][:type] do
+        raise "You need to set exchange name in #{__MODULE__} options."
+      end
+
+      unless @channel_conf[:exchange][:type] in [:direct, :fanout, :topic, :headers] do
+        raise "Incorrect exchange type in #{__MODULE__} options."
+      end
+
       @doc """
       Publish new message to a linked channel.
       """

@@ -161,8 +161,6 @@ defmodule RBMQ.ConnectionTest do
     assert :ok = AMQP.Connection.close(conn)
   end
 
-  # TODO: configuration tests
-
   # # TODO: how to test killed channels?
   # test "restarts connection" do
   #   TestConnectionWithoutConfig.start_link
