@@ -1,6 +1,6 @@
 defmodule RBMQ.Connection.Channel do
   @moduledoc """
-  AQMP channel server.
+  AMQP channel server.
 
   Whenever connection gets rest channel reinitializes itself.
   """
@@ -10,18 +10,37 @@ defmodule RBMQ.Connection.Channel do
   alias RBMQ.Connector
 
   def start_link(opts, name \\ []) do
+    # IO.inspect "Linking !"
+    # IO.inspect opts
+    # IO.inspect name
+    # IO.inspect "========"
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
   @doc false
   def init(opts) do
-    chan_opts = Keyword.get(opts, :config, [])
+    {:ok, _init(opts)}
+  end
 
-    {:ok, chan} = opts[:connection]
-    |> Connector.open_channel
-    |> configure(chan_opts)
+  defp _init(opts) do
+    chan_opts = opts
+    |> Keyword.delete(:channel)
+    |> Keyword.get(:config, [])
 
-    {:ok, [channel: chan, config: chan_opts]}
+    # IO.inspect "Open channel #{inspect chan_opts}:"
+
+    # :timer.sleep(100)
+    # IO.inspect Connector.open_channel(opts[:connection])
+
+    {:ok, chan} = Connector.open_channel(opts[:connection])
+
+    configure(chan, chan_opts)
+
+    # Monitor channel state
+    # IO.inspect "Start monitor"
+    Process.monitor(chan.pid)
+
+    [channel: chan, config: chan_opts, connection: opts[:connection]]
   end
 
   defp configure(chan, chan_opts) do
@@ -31,35 +50,32 @@ defmodule RBMQ.Connection.Channel do
     |> configure_exchange(chan_opts[:queue], chan_opts[:exchange])
   end
 
-  defp configure_qos({:ok, _} = res, nil) do
-    res
+  defp configure_qos(chan, nil) do
+    chan
   end
 
-  defp configure_qos({:ok, chan} = res, qos_opts) do
+  defp configure_qos(chan, qos_opts) do
     Connector.set_channel_qos(chan, qos_opts)
-
-    res
+    chan
   end
 
-  defp configure_queue({:ok, _} = res, nil) do
-    res
+  defp configure_queue(chan, nil) do
+    chan
   end
 
-  defp configure_queue({:ok, chan} = res, queue_opts) do
+  defp configure_queue(chan, queue_opts) do
     Connector.declare_queue(chan, queue_opts[:name], queue_opts[:error_name], queue_opts)
-
-    res
+    chan
   end
 
-  defp configure_exchange({:ok, _} = res, queue_opts, exchange_opts) when is_nil(queue_opts) or is_nil(exchange_opts) do
-    res
+  defp configure_exchange(chan, queue_opts, exchange_opts) when is_nil(queue_opts) or is_nil(exchange_opts) do
+    chan
   end
 
-  defp configure_exchange({:ok, chan} = res, queue_opts, exchange_opts) do
+  defp configure_exchange(chan, queue_opts, exchange_opts) do
     Connector.declare_exchange(chan, exchange_opts[:name], exchange_opts[:type], exchange_opts)
     Connector.bind_queue(chan, queue_opts[:name], exchange_opts[:name], routing_key: queue_opts[:routing_key])
-
-    res
+    chan
   end
 
   @doc false
@@ -99,8 +115,37 @@ defmodule RBMQ.Connection.Channel do
   end
 
   @doc false
-  def handle_cast(:close, [channel: chan]) do
-    Connector.close_channel(chan)
+  def handle_info({:DOWN, monitor_ref, :process, pid, reason}, state) do
+    Logger.error "AMQP channel went down: #{inspect pid}"
+    # AMQP.Channel.close(%AMQP.Channel{pid: pid, conn: state[:connection]})
+    Process.demonitor(monitor_ref)
+    :timer.sleep(100)
+
+    case reason do
+      :normal ->
+        {:stop, :normal, :ok}
+      _ ->
+        {:stop, :channel_down, state}
+        # IO.inspect reason
+        # # IO.inspect state
+
+        # # :timer.sleep(1_000)
+
+        # state = state
+        # |> Keyword.delete(:channel)
+        # |> _init
+
+        # IO.inspect "Got new state"
+        # # IO.inspect state
+
+        # {:noreply, state}
+        # # {:stop, :child_dead, state}
+    end
+  end
+
+  @doc false
+  def handle_cast(:close, state) do
+    Connector.close_channel(state[:channel])
     {:stop, :normal, :ok}
   end
 
@@ -116,7 +161,7 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def handle_call({:reconnect, conn}, _from, [config: chan_opts]) do
-    state = init([
+    state = _init([
       connection: conn,
       config: chan_opts
     ])
@@ -125,16 +170,15 @@ defmodule RBMQ.Connection.Channel do
   end
 
   @doc false
-  def handle_call({:apply_config, config}, _from, [channel: chan, config: chan_opts]) do
-    {:ok, chan} = {:ok, chan}
+  def handle_call({:apply_config, config}, _from, state) do
+    chan = state[:channel]
     |> configure(config)
 
-    state = [
+    {:reply, :ok, [
       channel: chan,
-      config: Keyword.merge(chan_opts, config)
-    ]
-
-    {:reply, :ok, state}
+      config: Keyword.merge(state[:config], config),
+      connection: state[:connection]
+    ]}
   end
 
   @doc false

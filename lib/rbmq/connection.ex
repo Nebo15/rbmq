@@ -36,7 +36,9 @@ defmodule RBMQ.Connection do
         # Tell all open channels to update their connections
         __MODULE__
         |> Supervisor.which_children
-        |> Enum.filter(fn {_, child, type, _} -> is_pid(child) && type == :worker end)
+        |> Enum.filter(fn {_, child, type, _} ->
+          is_pid(child) && Process.alive?(child) && type == :worker
+        end)
         |> Enum.map(fn {_, child, _, _} ->
           RBMQ.Connection.Channel.reconnect(child, conn)
         end)

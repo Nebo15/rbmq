@@ -8,53 +8,13 @@ defmodule RBMQ.GenericProducer do
   @doc false
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
-      use GenServer
-      require Logger
-
-      @connection Keyword.get(opts, :connection)
-      @channel_name String.to_atom("#{__MODULE__}.Channel")
-      @channel_conf Keyword.delete(opts, :connection)
-
-      unless @connection do
-        raise "You need to implement connection module and pass it in :connection option."
-      end
-
-      def start_link do
-        GenServer.start_link(__MODULE__, @channel_conf, name: __MODULE__)
-      end
-
-      def init(opts) do
-        unless Process.whereis(@connection) do
-          raise "Connection #{__MODULE__} is undefined or down."
-        end
-
-        @connection.spawn_channel(@channel_name)
-        @connection.configure_channel(@channel_name, opts)
-        chan = @connection.get_channel(@channel_name)
-
-        # TODO: reconfigure when channel is restarted
-        # Store config inside channel
-        # Process.monitor(chan.pid)
-
-        {:ok, chan}
-      end
+      use RBMQ.Worker, opts
 
       @doc """
       Publish new message to a linked channel.
       """
       def publish(data) do
-        GenServer.call(__MODULE__, {:publish, data})
-      end
-
-      @doc """
-      Get queue status.
-      """
-      def status do
-        GenServer.call(__MODULE__, :status)
-      end
-
-      defp config do
-        RBMQ.Connection.Channel.get_config(@channel_name)
+        GenServer.call(__MODULE__, {:publish, data}, :infinity)
       end
 
       @doc false
@@ -65,11 +25,6 @@ defmodule RBMQ.GenericProducer do
           {:error, _} = err ->
             {:reply, err, chan}
         end
-      end
-
-      @doc false
-      def handle_call(:status, _from, chan) do
-        {:reply, AMQP.Queue.status(chan, config[:queue][:name]), chan}
       end
 
       defp delayed_publish(chan, data) do
@@ -86,7 +41,12 @@ defmodule RBMQ.GenericProducer do
       defp _publish(chan, data) do
         is_persistent = Keyword.get(config[:queue], :durable, false)
 
-        case AMQP.Basic.publish(chan, config[:exchange][:name], config[:queue][:routing_key], data, [mandatory: true, persistent: is_persistent]) do
+        case AMQP.Basic.publish(chan,
+                                config[:exchange][:name],
+                                config[:queue][:routing_key],
+                                data,
+                                [mandatory: true,
+                                 persistent: is_persistent]) do
           :ok ->
             {:reply, :ok, chan}
           _ ->
@@ -95,6 +55,13 @@ defmodule RBMQ.GenericProducer do
       end
     end
   end
+
+  @doc """
+  Publish new message to a linked channel.
+
+  If channel is down it will keep trying to send message with 3 second timeout.
+  """
+  @callback publish :: :ok | :error
 end
 
 defmodule Rbmq.Producer do

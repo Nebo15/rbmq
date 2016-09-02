@@ -1,5 +1,5 @@
 defmodule RBMQ.ConnectionTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   import RBMQ.Connection
   doctest RBMQ.Connection
 
@@ -170,6 +170,9 @@ defmodule RBMQ.ConnectionTest do
   #   # IO.inspect chan_pid
 
   #   # :timer.sleep(20000)
+
+  # Kill connection, it dies with channels
+  # Process.exit(context[:channel].pid, :kill)
 
   #   # Close connection
   #   # AMQP.Connection.close(conn)

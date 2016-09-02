@@ -79,7 +79,7 @@ defmodule RBMQ.Connector do
   Same as `open_channel!/1`, but returns {:ok, conn} or {:error, reason} tuples.
   """
   def open_channel(%Connection{} = conn) do
-    Logger.debug "Opening new AQMP channel"
+    Logger.debug "Opening new AQMP channel for conn #{inspect conn.pid}"
     case Channel.open(conn) do
       {:ok, %Channel{} = chan} ->
         {:ok, chan}
