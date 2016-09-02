@@ -25,21 +25,20 @@ The package can be installed as:
 
 ## Configuration
 
-You can define connection configuration in your `config.exs`:
+  You can define connection configuration in your `config.exs`:
 
-    ```elixir
+  ```elixir
+  config :my_app, MyAMQPConnection,
+    host: {:system, "AMQP_HOST", "localhost"},
+    port: {:system, "AMQP_PORT", 5672},
+    username: {:system, "AMQP_USER", "guest"},
+    password: {:system, "AMQP_PASSWORD", "guest"},
+    virtual_host: {:system, "AMQP_VHOST", "/"},
+    connection_timeout: {:system, "AMQP_TIMEOUT", 15_000},
+  ```
 
-    config :my_app, MyAMQPConnection,
-      host: {:system, "AMQP_HOST", "localhost"},
-      port: {:system, "AMQP_PORT", 5672},
-      username: {:system, "AMQP_USER", "guest"},
-      password: {:system, "AMQP_PASSWORD", "guest"},
-      virtual_host: {:system, "AMQP_VHOST", "/"},
-      connection_timeout: {:system, "AMQP_TIMEOUT", 15_000},
-    ```
-
-    RBMQ support linking to runtime environment conflagration via `{:system, "ENV_VAR_NAME", "default_value"}`
-    and `{:system, "ENV_VAR_NAME"}` tuples. But are free to set raw values whenever you need.
+  RBMQ support linking to runtime environment conflagration via `{:system, "ENV_VAR_NAME", "default_value"}`
+  and `{:system, "ENV_VAR_NAME"}` tuples. But are free to set raw values whenever you need.
 
 By default RBMQ read environment configuration to establish AMQP connection:
 
