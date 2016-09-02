@@ -25,7 +25,7 @@ defmodule RBMQ.Connection.Guard do
 
   @doc false
   def handle_info({:DOWN, monitor_ref, :process, _pid, _reason}, mod) do
-    Logger.error "AQMP connection #{inspect mod} went down"
+    Logger.error "AMQP connection #{inspect mod} went down"
 
     # Stop minitoring dead connection
     Process.demonitor(monitor_ref, [:flush])

@@ -1,6 +1,6 @@
 defmodule RBMQ.Connection do
   @moduledoc """
-  AQMP connection supervisor.
+  AMQP connection supervisor.
   """
 
   @doc false

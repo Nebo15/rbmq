@@ -1,6 +1,6 @@
 defmodule RBMQ.Producer do
   @moduledoc """
-  AQMP channel producer.
+  AMQP channel producer.
 
   You must configure connection (queue and exchange) before calling `publish/1` function.
   """

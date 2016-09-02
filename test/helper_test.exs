@@ -5,7 +5,7 @@ defmodule RBMQ.ConnectionHelperTest do
   doctest RBMQ.Connection.Helper
 
   test "invalid host raise exception" do
-    assert_raise RuntimeError, "AQMP connection was refused", fn ->
+    assert_raise RuntimeError, "AMQP connection was refused", fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, port: 1234])
       |> open_connection!
@@ -13,7 +13,7 @@ defmodule RBMQ.ConnectionHelperTest do
   end
 
   test "timeout raises exception" do
-    assert_raise RuntimeError, "AQMP connection timeout", fn ->
+    assert_raise RuntimeError, "AMQP connection timeout", fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, host: "example.com", connection_timeout: 50])
       |> open_connection!
@@ -21,7 +21,7 @@ defmodule RBMQ.ConnectionHelperTest do
   end
 
   test "invalid credentials raise exception" do
-    assert_raise RuntimeError, ~r/AQMP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
+    assert_raise RuntimeError, ~r/AMQP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, password: "1234"])
       |> open_connection!
@@ -29,7 +29,7 @@ defmodule RBMQ.ConnectionHelperTest do
   end
 
   test "invalid vhost raise exception" do
-    assert_raise RuntimeError, ~r/AQMP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
+    assert_raise RuntimeError, ~r/AMQP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, password: "1234"])
       |> open_connection!

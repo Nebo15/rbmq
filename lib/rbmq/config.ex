@@ -4,12 +4,12 @@ defmodule RBMQ.Config do
   """
 
   @defaults [
-    host: {:system, "AQMP_HOST", "localhost"},
-    port: {:system, "AQMP_PORT", 5672},
-    username: {:system, "AQMP_USER", "guest"},
-    password: {:system, "AQMP_PASSWORD", "guest"},
-    virtual_host: {:system, "AQMP_VHOST", "/"},
-    connection_timeout: {:system, "AQMP_TIMEOUT", 15_000},
+    host: {:system, "AMQP_HOST", "localhost"},
+    port: {:system, "AMQP_PORT", 5672},
+    username: {:system, "AMQP_USER", "guest"},
+    password: {:system, "AMQP_PASSWORD", "guest"},
+    virtual_host: {:system, "AMQP_VHOST", "/"},
+    connection_timeout: {:system, "AMQP_TIMEOUT", 15_000},
   ]
 
   @doc """
@@ -50,7 +50,7 @@ defmodule RBMQ.Config do
   end
 
   defp parse(_) do
-    raise ArgumentError, "AQMP params must be a list. " <>
+    raise ArgumentError, "AMQP params must be a list. " <>
                          "See https://hexdocs.pm/amqp/AMQP.Connection.html#open/1"
   end
 
@@ -70,7 +70,7 @@ defmodule RBMQ.Config do
     {_, params} = Keyword.get_and_update(params, :port, fn port ->
       case cast_integer(port) do
         :error ->
-          raise ArgumentError, "can not convert AQMP port to an integer"
+          raise ArgumentError, "can not convert AMQP port to an integer"
         port_int ->
           {port, port_int}
       end

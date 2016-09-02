@@ -74,17 +74,17 @@ defmodule RBMQ.ConfigTest do
   end
 
   test "defaults reads env" do
-    System.put_env("AQMP_HOST", "somehost")
-    System.put_env("AQMP_PORT", "1234")
-    System.put_env("AQMP_USER", "foo")
-    System.put_env("AQMP_PASSWORD", "bar")
-    System.put_env("AQMP_VHOST", "foohost")
+    System.put_env("AMQP_HOST", "somehost")
+    System.put_env("AMQP_PORT", "1234")
+    System.put_env("AMQP_USER", "foo")
+    System.put_env("AMQP_PASSWORD", "bar")
+    System.put_env("AMQP_VHOST", "foohost")
     res = RBMQ.Config.get(__MODULE__, [otp_app: :rbmq])
-    System.delete_env("AQMP_HOST")
-    System.delete_env("AQMP_PORT")
-    System.delete_env("AQMP_USER")
-    System.delete_env("AQMP_PASSWORD")
-    System.delete_env("AQMP_VHOST")
+    System.delete_env("AMQP_HOST")
+    System.delete_env("AMQP_PORT")
+    System.delete_env("AMQP_USER")
+    System.delete_env("AMQP_PASSWORD")
+    System.delete_env("AMQP_VHOST")
 
     assert [host: "somehost",
             port: 1234,

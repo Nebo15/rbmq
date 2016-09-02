@@ -1,6 +1,6 @@
 defmodule RBMQ.Connection.Helper do
   @moduledoc """
-  Helper functions to manage connections with AQMP.
+  Helper functions to manage connections with AMQP.
 
   This module produces verbose debug logs.
   """
@@ -8,7 +8,7 @@ defmodule RBMQ.Connection.Helper do
   require Logger
 
   @doc """
-  Open AQMP connection.
+  Open AMQP connection.
 
   # Options
     * `:username` - The name of a user registered with the broker (defaults to \"guest\");
@@ -42,27 +42,27 @@ defmodule RBMQ.Connection.Helper do
   Same as `open_connection!/1`, but returns {:ok, conn} or {:error, reason} tuples.
   """
   def open_connection(conn_opts) do
-    Logger.debug "Establishing new AQMP connection, with opts: #{inspect conn_opts}"
+    Logger.debug "Establishing new AMQP connection, with opts: #{inspect conn_opts}"
     case Connection.open(conn_opts) do
       {:ok, %Connection{}} = res ->
         res
       {:error, :econnrefused} ->
-        Logger.error "AQMP refused connection, opts: #{inspect conn_opts}"
-        {:error, "AQMP connection was refused"}
+        Logger.error "AMQP refused connection, opts: #{inspect conn_opts}"
+        {:error, "AMQP connection was refused"}
       {:error, :timeout} ->
-        Logger.error "AQMP connection timeout, opts: #{inspect conn_opts}"
-        {:error, "AQMP connection timeout"}
+        Logger.error "AMQP connection timeout, opts: #{inspect conn_opts}"
+        {:error, "AMQP connection timeout"}
       {:error, {:auth_failure, message}} ->
-        Logger.error "AQMP authorization failed, opts: #{inspect conn_opts}"
-        {:error, "AQMP authorization failed: #{inspect message}"}
+        Logger.error "AMQP authorization failed, opts: #{inspect conn_opts}"
+        {:error, "AMQP authorization failed: #{inspect message}"}
       {:error, reason} ->
-        Logger.error "Error during AQMP connection establishing, opts: #{inspect conn_opts}"
+        Logger.error "Error during AMQP connection establishing, opts: #{inspect conn_opts}"
         {:error, inspect(reason)}
     end
   end
 
   @doc """
-  Open new AQMP channel inside a connection.
+  Open new AMQP channel inside a connection.
 
   See: https://hexdocs.pm/amqp/AMQP.Channel.html#open/1
   """
@@ -79,7 +79,7 @@ defmodule RBMQ.Connection.Helper do
   Same as `open_channel!/1`, but returns {:ok, conn} or {:error, reason} tuples.
   """
   def open_channel(%Connection{} = conn) do
-    Logger.debug "Opening new AQMP channel for conn #{inspect conn.pid}"
+    Logger.debug "Opening new AMQP channel for conn #{inspect conn.pid}"
     case Process.alive?(conn.pid) do
       false ->
         {:error, :conn_dead}
@@ -97,16 +97,16 @@ defmodule RBMQ.Connection.Helper do
         :timer.sleep(1_000)
         open_channel(conn)
       {:error, reason} ->
-        Logger.error "Can't create new AQMP channel"
+        Logger.error "Can't create new AMQP channel"
         {:error, inspect(reason)}
     end
   end
 
   @doc """
-  Gracefully close AQMP channel.
+  Gracefully close AMQP channel.
   """
   def close_channel(%Channel{} = chan) do
-    Logger.debug "Closing AQMP channel"
+    Logger.debug "Closing AMQP channel"
     Channel.close(chan)
   end
 
@@ -130,7 +130,7 @@ defmodule RBMQ.Connection.Helper do
   end
 
   @doc """
-  Declare AQMP queue. You can omit `error_queue`, then dead letter queue won't be created.
+  Declare AMQP queue. You can omit `error_queue`, then dead letter queue won't be created.
   Dead letter queue is hardcoded to be durable.
 
   # Options
@@ -165,7 +165,7 @@ defmodule RBMQ.Connection.Helper do
   end
 
   @doc """
-  Declare AQMP exchange. Exchange is durable whenever queue is durable.
+  Declare AMQP exchange. Exchange is durable whenever queue is durable.
 
   # Types:
     *   `:direct` - direct exchange.
@@ -183,7 +183,7 @@ defmodule RBMQ.Connection.Helper do
   end
 
   @doc """
-  Bind AQMP queue to Exchange.
+  Bind AMQP queue to Exchange.
 
   See: https://hexdocs.pm/amqp/AMQP.Queue.html#bind/4
   """
