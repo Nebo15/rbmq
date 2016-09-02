@@ -21,24 +21,24 @@ defmodule RBMQ.Producer do
       def handle_call({:publish, data}, _from, chan) do
         case Poison.encode(data) do
           {:ok, encoded_data} ->
-            delayed_publish(chan, encoded_data)
+            safe_publish(chan, encoded_data)
           {:error, _} = err ->
             {:reply, err, chan}
         end
       end
 
-      defp delayed_publish(chan, data) do
+      defp safe_publish(chan, data) do
         case Process.alive?(chan.pid) do
           true ->
-            _publish(chan, data)
+            cast(chan, data)
           _ ->
             Logger.warn("Channel #{inspect @channel_name} is dead, waiting till it gets restarted")
             :timer.sleep(3_000)
-            delayed_publish(chan, data)
+            safe_publish(chan, data)
         end
       end
 
-      defp _publish(chan, data) do
+      defp cast(chan, data) do
         is_persistent = Keyword.get(config[:queue], :durable, false)
 
         case AMQP.Basic.publish(chan,
