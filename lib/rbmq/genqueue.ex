@@ -56,11 +56,17 @@ defmodule RBMQ.GenQueue do
         {:reply, AMQP.Queue.status(chan, config[:queue][:name]), chan}
       end
 
-      @doc """
-      This method can be overrided to initialize
-      """
-      def handle_cast(:init, chan) do
-        {:reply, :ok, chan}
+      def safe_run(fun) do
+        chan = get_channel
+
+        case !is_nil(chan) && Process.alive?(chan.pid) do
+          true ->
+            fun.(chan)
+          _ ->
+            Logger.warn("[GenQueue] Channel #{inspect @channel_name} is dead, waiting till it gets restarted")
+            :timer.sleep(3_000)
+            safe_run(fun)
+        end
       end
 
       defoverridable [init_worker: 2]

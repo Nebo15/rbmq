@@ -39,8 +39,8 @@ defmodule RBMQ.ConsumerTest do
         prefetch_count: 10
       ]
 
-    def consume(_payload, [tag: tag, redelivered?: _redelivered, channel: chan]) do
-      ack(chan, tag)
+    def consume(_payload, [tag: tag, redelivered?: _redelivered]) do
+      ack(tag)
     end
   end
 
@@ -52,7 +52,7 @@ defmodule RBMQ.ConsumerTest do
   end
 
   setup do
-    chan = ProducerTestConnection.get_channel(RBMQ.ConsumerTest.TestProducer.Channel)
+    chan = ProducerTestConnection.get_channel(RBMQ.ConsumerTest.TestConsumer.Channel)
     AMQP.Queue.purge(chan, @queue)
     [channel: chan]
   end
@@ -66,8 +66,24 @@ defmodule RBMQ.ConsumerTest do
     assert :ok == TestProducer.publish([:list])
     assert :ok == TestProducer.publish(false)
 
+    :timer.sleep(200)
 
-    :timer.sleep(100)
+    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status
+  end
+
+   test "reads messages when channel dies", context do
+    for n <- 1..100 do
+      assert :ok == TestProducer.publish(n)
+      if n == 20 do
+        # Kill channel
+        AMQP.Channel.close(context[:channel])
+        :timer.sleep(1) # Break execution loop
+      end
+    end
+
+
+    # Wait till it respawns
+    :timer.sleep(5_000)
 
     assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status
   end
