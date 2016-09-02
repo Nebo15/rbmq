@@ -13,7 +13,7 @@ defmodule RBMQ.GenQueue do
       inline_conf = Keyword.delete(opts, :connection)
       case opts[:otp_app] do
         nil ->
-          @channel_conf inline_conf
+          @channel_conf RBMQ.Config.substitute_env(inline_conf)
         otp_app ->
           @channel_conf inline_conf
           |> Keyword.merge([otp_app: otp_app])

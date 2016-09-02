@@ -13,7 +13,7 @@ defmodule RBMQ.Config do
   ]
 
   @doc """
-  Read configuration from environment.
+  Read configuration from environment and application configuration.
 
   You can use `{:system, "ENV", default_value}` or `{:system, "ENV"}` tuple to read
   configuration from environment variables in runtime.
@@ -43,9 +43,17 @@ defmodule RBMQ.Config do
     |> parse
   end
 
-  defp parse(params) when is_list(params) do
+  @doc """
+  Replace all :system tuples in map with environment variable name or default value.
+  """
+  def substitute_env(params) do
     params
     |> Enum.map(fn {k, v} -> {k, parse_entry(v)} end)
+  end
+
+  defp parse(params) when is_list(params) do
+    params
+    |> substitute_env
     |> normalize_port
   end
 
@@ -60,6 +68,10 @@ defmodule RBMQ.Config do
 
   def parse_entry({:system, env}) when is_binary(env) do
     System.get_env(env)
+  end
+
+  def parse_entry(list) when is_list(list) do
+    substitute_env(list)
   end
 
   def parse_entry(value) do
