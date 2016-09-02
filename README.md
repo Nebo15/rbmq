@@ -84,7 +84,9 @@ Other connections settings can be found in [AMQP client docs](https://hexdocs.pm
           durable: false
         ]
     end
+    ```
 
+    ```elixir
     defmodule MyConsumer do
       use RBMQ.Consumer,
         connection: MyAMQPConnection,
