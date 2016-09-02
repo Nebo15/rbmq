@@ -61,11 +61,13 @@ defmodule RBMQ.GenQueue do
       end
 
       defp config do
-        RBMQ.Connection.Channel.get_config(@channel_name)
+          RBMQ.Connection.Channel.get_config(@channel_name)
       end
 
       def handle_call(:status, _from, chan) do
-        {:reply, AMQP.Queue.status(chan, config[:queue][:name]), chan}
+        safe_run fn(_) ->
+          {:reply, AMQP.Queue.status(chan, config[:queue][:name]), chan}
+        end
       end
 
       def safe_run(fun) do
