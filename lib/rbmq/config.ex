@@ -67,16 +67,21 @@ defmodule RBMQ.Config do
   end
 
   defp normalize_port(params) do
-    {_, params} = Keyword.get_and_update(params, :port, fn port ->
-      case cast_integer(port) do
-        :error ->
-          raise ArgumentError, "can not convert AMQP port to an integer"
-        port_int ->
-          {port, port_int}
-      end
-    end)
+    case Keyword.get(params, :port) do
+      nil ->
+        params
+      _ ->
+        {_, params} = Keyword.get_and_update(params, :port, fn port ->
+          case cast_integer(port) do
+            :error ->
+              raise ArgumentError, "can not convert AMQP port to an integer"
+            port_int ->
+              {port, port_int}
+          end
+        end)
 
-    params
+        params
+    end
   end
 
   defp cast_integer(var) do

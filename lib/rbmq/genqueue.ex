@@ -9,7 +9,16 @@ defmodule RBMQ.GenQueue do
 
       @connection Keyword.get(opts, :connection)
       @channel_name String.to_atom("#{__MODULE__}.Channel")
-      @channel_conf Keyword.delete(opts, :connection)
+
+      inline_conf = Keyword.delete(opts, :connection)
+      case opts[:otp_app] do
+        nil ->
+          @channel_conf inline_conf
+        otp_app ->
+          @channel_conf inline_conf
+          |> Keyword.merge([otp_app: otp_app])
+          |> (&RBMQ.Config.get(__MODULE__, &1)).()
+      end
 
       unless @connection do
         raise "You need to implement connection module and pass it in :connection option."
