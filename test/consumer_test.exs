@@ -1,7 +1,7 @@
 defmodule RBMQ.ConsumerTest do
   use ExUnit.Case
   use AMQP
-  doctest RBMQ.GenericConsumer
+  doctest RBMQ.Consumer
 
   @queue "consumer_test_qeueue"
 
@@ -11,7 +11,7 @@ defmodule RBMQ.ConsumerTest do
   end
 
   defmodule TestProducer do
-    use RBMQ.GenericProducer,
+    use RBMQ.Producer,
       connection: ProducerTestConnection,
       queue: [
         name: "consumer_test_qeueue",
@@ -27,7 +27,7 @@ defmodule RBMQ.ConsumerTest do
   end
 
   defmodule TestConsumer do
-    use RBMQ.GenericConsumer,
+    use RBMQ.Consumer,
       connection: ProducerTestConnection,
       queue: [
         name: "consumer_test_qeueue",

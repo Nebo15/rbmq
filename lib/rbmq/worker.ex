@@ -1,4 +1,4 @@
-defmodule RBMQ.Worker do
+defmodule RBMQ.GenQueue do
   @moduledoc false
 
   @doc false
@@ -36,7 +36,7 @@ defmodule RBMQ.Worker do
         end
       end
 
-      def init_worker(chan, _opts) do
+      defp init_worker(chan, _opts) do
         chan
       end
 

@@ -31,7 +31,7 @@ defmodule RBMQ.Config do
 
   Read configs:
 
-    Rbmq.Config.get(MyApp.ConsumerQueue, :rbmq)
+    RBMQ.Config.get(MyApp.ConsumerQueue, :rbmq)
 
   """
   def get(module, opts \\ [otp_app: :rbmq]) do

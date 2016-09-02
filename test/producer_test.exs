@@ -2,7 +2,7 @@ defmodule RBMQ.ProducerTest do
   use ExUnit.Case
   import RBMQ.Connection
   use AMQP
-  doctest RBMQ.GenericProducer
+  doctest RBMQ.Producer
 
   defmodule ProducerTestConnection do
     use RBMQ.Connection,
@@ -12,7 +12,7 @@ defmodule RBMQ.ProducerTest do
   @queue "producer_test_qeueue"
 
   defmodule TestProducer do
-    use RBMQ.GenericProducer,
+    use RBMQ.Producer,
       connection: ProducerTestConnection,
       queue: [
         name: "producer_test_qeueue",

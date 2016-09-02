@@ -21,7 +21,7 @@ defmodule RBMQ.Connection.Channel do
 
     case Connector.open_channel(opts[:connection]) do
       {:error, :conn_dead} ->
-        Logger.error "Connection #{inspect opts[:connection].pid} is dead, waiting for supervisor actions.."
+        Logger.warn "Connection #{inspect opts[:connection].pid} is dead, waiting for supervisor actions.."
         {:ok, [config: chan_opts]}
       {:ok, chan} ->
         configure(chan, chan_opts)

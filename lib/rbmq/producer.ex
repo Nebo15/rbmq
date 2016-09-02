@@ -1,4 +1,4 @@
-defmodule RBMQ.GenericProducer do
+defmodule RBMQ.Producer do
   @moduledoc """
   AQMP channel producer.
 
@@ -8,7 +8,7 @@ defmodule RBMQ.GenericProducer do
   @doc false
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
-      use RBMQ.Worker, opts
+      use RBMQ.GenQueue, opts
 
       @doc """
       Publish new message to a linked channel.

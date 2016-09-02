@@ -1,4 +1,4 @@
-# Rbmq
+# RBMQ
 
 Simple and easy creation of producers and consumers for RabbitMQ.
 Written over <a href="https://github.com/pma/amqp" target="_blank">AMQP</a>

@@ -1,4 +1,4 @@
-defmodule RBMQ.GenericConsumer do
+defmodule RBMQ.Consumer do
   @moduledoc """
   AQMP channel producer.
 
@@ -10,9 +10,9 @@ defmodule RBMQ.GenericConsumer do
   @doc false
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
-      use RBMQ.Worker, opts
+      use RBMQ.GenQueue, opts
 
-      def init_worker(chan, opts) do
+      defp init_worker(chan, opts) do
         {:ok, _consumer_tag} = AMQP.Basic.consume(chan, opts[:queue][:name])
         chan
       end
