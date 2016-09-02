@@ -9,7 +9,7 @@ defmodule RBMQ.Connection.Channel do
   require Logger
   alias RBMQ.Connection.Helper
 
-  def start_link(opts, name \\ []) do
+  def start_link(opts, name) do
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
@@ -17,12 +17,13 @@ defmodule RBMQ.Connection.Channel do
   def init(opts) do
     chan_opts = opts
     |> Keyword.delete(:channel)
+    |> Keyword.delete(:connection)
     |> Keyword.get(:config, [])
 
     case Helper.open_channel(opts[:connection]) do
       {:error, :conn_dead} ->
         Logger.warn "Connection #{inspect opts[:connection].pid} is dead, waiting for supervisor actions.."
-        {:ok, [config: chan_opts]}
+        {:ok, [channel: nil, config: chan_opts, connection: nil]}
       {:ok, chan} ->
         configure(chan, chan_opts)
 
@@ -107,7 +108,7 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def handle_info({:DOWN, monitor_ref, :process, pid, reason}, state) do
-    Logger.error "AMQP channel #{inspect pid} went down with reason #{inspect reason}."
+    Logger.warn "AMQP channel #{inspect pid} went down with reason #{inspect reason}."
     Process.demonitor(monitor_ref, [:flush])
     GenServer.cast(self(), {:restart, reason})
     {:noreply, state}
@@ -145,10 +146,10 @@ defmodule RBMQ.Connection.Channel do
   end
 
   @doc false
-  def handle_call({:reconnect, conn}, _from, [config: chan_opts]) do
-    state = init([
+  def handle_call({:reconnect, conn}, _from, state) do
+    {:ok, state} = init([
       connection: conn,
-      config: chan_opts
+      config: state[:config]
     ])
 
     {:reply, :ok, state}

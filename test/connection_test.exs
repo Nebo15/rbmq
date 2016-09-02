@@ -161,30 +161,26 @@ defmodule RBMQ.ConnectionTest do
     assert :ok = AMQP.Connection.close(conn)
   end
 
-  # # TODO: how to test killed channels?
-  # test "restarts connection" do
-  #   TestConnectionWithoutConfig.start_link
-  #   TestConnectionWithoutConfig.spawn_channel(:somename)
+  test "restarts connection" do
+    TestConnectionWithQueue.start_link
+    TestConnectionWithQueue.spawn_channel(:somename)
 
-  #   %AMQP.Channel{conn: conn} = TestConnectionWithoutConfig.get_channel(:somename)
+    %AMQP.Channel{conn: conn} = TestConnectionWithQueue.get_channel(:somename)
 
-  #   # :timer.sleep(20000)
+    # :timer.sleep(20000)
 
-  #   # Kill connection, it dies with channels
-  #   ref = Process.monitor(conn.pid)
-  #   AMQP.Connection.close(conn)
-  #   assert_receive {:DOWN, ^ref, _, _, _}
+    # Kill connection, it dies with channels
+    ref = Process.monitor(conn.pid)
+    AMQP.Connection.close(conn)
+    assert_receive {:DOWN, ^ref, _, _, _}
 
-  #   # Wait till channel restarts
-  #   :timer.sleep(5000)
+    # Wait till channel restarts
+    :timer.sleep(1000)
 
-  #   # Close connection
-  #   # AMQP.Connection.close(conn)
-  #   # Process.exit(conn.pid, :kill)
 
-  #   assert %AMQP.Channel{} = chan = TestConnectionWithoutConfig.get_channel(:somename)
-  #   IO.inspect AMQP.Channel.status(chan, "test_qeueue")
-  # end
+    assert %AMQP.Channel{} = chan = TestConnectionWithQueue.get_channel(:somename)
+    assert {:ok, _} = AMQP.Queue.status(chan, "test_qeueue_2")
+  end
 
   test "closes channels" do
     TestConnection.start_link

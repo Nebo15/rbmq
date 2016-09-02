@@ -21,23 +21,5 @@ use Mix.Config
 #     config :logger, level: :info
 #
 
-# config :rbmq,
-#   host: {:system, "HOST", "localhost"},
-#   port: "5672",
-#   username: "guest",
-#   password: "guest",
-#   prefetch_count: "10",
-#   amqp_exchange: "rbmq_exchange",
-#   foo: {:system, "BAR"}
-
-config :rbmq, amqp_exchange: "rbmq_exchange"
-config :rbmq, prefetch_count: "10"
-config :rbmq, amqp_params: [
-  host: "localhost",
-  port: "5672",
-  username: "guest",
-  password: "guest",
-]
-
 # Disable logger if you don't want to see verbose messages
 # config :logger, level: :info

@@ -11,14 +11,15 @@ defmodule RBMQ.Connection do
       alias AMQP.Connection
       alias RBMQ.Connection.Helper
 
+      @guard_name String.to_atom("#{__MODULE__}.Guard")
       @worker_config Keyword.delete(opts, :otp_app)
       @config RBMQ.Config.get(__MODULE__, opts)
 
-      defp connect(timeout \\ 10_000) do
+      def connect(timeout \\ 10_000) do
         case Helper.open_connection(@config) do
           {:ok, conn} ->
             # Get notifications when the connection goes down
-            # Process.monitor(conn.pid)
+            RBMQ.Connection.Guard.monitor(@guard_name, conn.pid)
             conn
           {:error, _} ->
             Logger.warn "Trying to restart connection in #{inspect timeout} microseconds"
@@ -28,26 +29,13 @@ defmodule RBMQ.Connection do
         end
       end
 
-      def handle_info({:DOWN, monitor_ref, :process, pid, _reason}) do
-        Logger.error "AQMP connection #{inspect pid} went down"
-        Process.demonitor(monitor_ref, [:flush])
-
-        conn = [connection: connect(), config: @worker_config]
-
-        # Tell all open channels to update their connections
-        __MODULE__
-        |> Supervisor.which_children
-        |> Enum.filter(fn {_, child, type, _} ->
-          is_pid(child) && Process.alive?(child) && type == :worker
-        end)
-        |> Enum.map(fn {_, child, _, _} ->
-          RBMQ.Connection.Channel.reconnect(child, conn)
-        end)
-
-        :noreply
+      def close do
+        Process.exit(@guard_name, :normal)
+        Supervisor.stop(__MODULE__)
       end
 
       def start_link do
+        RBMQ.Connection.Guard.start_link(__MODULE__, @guard_name)
         Supervisor.start_link(__MODULE__, [], name: __MODULE__)
       end
 
