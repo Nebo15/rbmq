@@ -28,8 +28,7 @@ defmodule RBMQ.GenQueue do
             @connection.spawn_channel(@channel_name)
             @connection.configure_channel(@channel_name, opts)
 
-            chan = @channel_name
-            |> @connection.get_channel
+            chan = get_channel
             |> init_worker(opts)
 
             {:ok, chan}
@@ -38,6 +37,11 @@ defmodule RBMQ.GenQueue do
 
       defp init_worker(chan, _opts) do
         chan
+      end
+
+      defp get_channel do
+        chan = @channel_name
+        |> @connection.get_channel
       end
 
       def status do

@@ -63,29 +63,23 @@ defmodule RBMQ.ProducerTest do
     assert {:ok, %{message_count: 1001, queue: @queue}} = TestProducer.status
   end
 
-  # test "messages delivered when channel dies", context do
-  #   # Kill connection, it dies with channels
-  #   # Process.exit(context[:channel].pid, :kill)
+  test "messages delivered when channel dies", context do
+    for n <- 1..100 do
+      assert :ok == TestProducer.publish(n)
+      if n == 20 do
+        # Kill channel
+        AMQP.Channel.close(context[:channel])
+        :timer.sleep(1) # Break execution loop
+      end
+    end
 
-  #   # Kill channel
-  #   Process.exit(context[:channel].pid, :shutdown)
+    # Wait till it respawns
+    :timer.sleep(1_000)
 
-  #   # ref = Process.monitor(context[:channel].pid)
-  #   # assert_receive {:DOWN, ^ref, _, _, _}
+    # Doesn't spawn additional connections
+    assert Supervisor.count_children(ProducerTestConnection).active == 1
+    assert Supervisor.count_children(ProducerTestConnection).workers == 1
 
-  #   for n <- 1..100 do
-  #     assert :ok == TestProducer.publish(n)
-  #   end
-
-  #   # Wait till it respawns
-  #   :timer.sleep(100)
-
-  #   # Doesn't spawn additional connections
-  #   assert Supervisor.count_children(ProducerTestConnection).active == 1
-  #   assert Supervisor.count_children(ProducerTestConnection).workers == 1
-
-  #   :timer.sleep(500)
-
-  #   assert {:ok, %{message_count: 100, queue: @queue}} = TestProducer.status
-  # end
+    assert {:ok, %{message_count: 100, queue: @queue}} = TestProducer.status
+  end
 end

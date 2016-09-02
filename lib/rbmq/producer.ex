@@ -31,10 +31,10 @@ defmodule RBMQ.Producer do
         case Process.alive?(chan.pid) do
           true ->
             cast(chan, data)
-          _ ->
+          false ->
             Logger.warn("Channel #{inspect @channel_name} is dead, waiting till it gets restarted")
             :timer.sleep(3_000)
-            safe_publish(chan, data)
+            safe_publish(get_channel, data)
         end
       end
 
