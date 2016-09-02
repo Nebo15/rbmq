@@ -68,8 +68,3 @@ defmodule RBMQ.GenericConsumer do
   """
   @callback consume :: :ok | :error
 end
-
-defmodule RBMQ.Consumer.Task do
-
-end
-
