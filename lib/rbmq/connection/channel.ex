@@ -7,7 +7,7 @@ defmodule RBMQ.Connection.Channel do
 
   use GenServer
   require Logger
-  alias RBMQ.Connector
+  alias RBMQ.Connection.Helper
 
   def start_link(opts, name \\ []) do
     GenServer.start_link(__MODULE__, opts, name: name)
@@ -19,7 +19,7 @@ defmodule RBMQ.Connection.Channel do
     |> Keyword.delete(:channel)
     |> Keyword.get(:config, [])
 
-    case Connector.open_channel(opts[:connection]) do
+    case Helper.open_channel(opts[:connection]) do
       {:error, :conn_dead} ->
         Logger.warn "Connection #{inspect opts[:connection].pid} is dead, waiting for supervisor actions.."
         {:ok, [config: chan_opts]}
@@ -46,7 +46,7 @@ defmodule RBMQ.Connection.Channel do
   end
 
   defp configure_qos(chan, qos_opts) do
-    Connector.set_channel_qos(chan, qos_opts)
+    Helper.set_channel_qos(chan, qos_opts)
     chan
   end
 
@@ -55,7 +55,7 @@ defmodule RBMQ.Connection.Channel do
   end
 
   defp configure_queue(chan, queue_opts) do
-    Connector.declare_queue(chan, queue_opts[:name], queue_opts[:error_name], queue_opts)
+    Helper.declare_queue(chan, queue_opts[:name], queue_opts[:error_name], queue_opts)
     chan
   end
 
@@ -64,8 +64,8 @@ defmodule RBMQ.Connection.Channel do
   end
 
   defp configure_exchange(chan, queue_opts, exchange_opts) do
-    Connector.declare_exchange(chan, exchange_opts[:name], exchange_opts[:type], exchange_opts)
-    Connector.bind_queue(chan, queue_opts[:name], exchange_opts[:name], routing_key: queue_opts[:routing_key])
+    Helper.declare_exchange(chan, exchange_opts[:name], exchange_opts[:type], exchange_opts)
+    Helper.bind_queue(chan, queue_opts[:name], exchange_opts[:name], routing_key: queue_opts[:routing_key])
     chan
   end
 
@@ -130,7 +130,7 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def handle_cast(:close, state) do
-    Connector.close_channel(state[:channel])
+    Helper.close_channel(state[:channel])
     {:stop, :normal, :ok}
   end
 

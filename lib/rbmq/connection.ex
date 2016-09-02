@@ -9,13 +9,13 @@ defmodule RBMQ.Connection do
       use Supervisor
       require Logger
       alias AMQP.Connection
-      alias RBMQ.Connector
+      alias RBMQ.Connection.Helper
 
       @worker_config Keyword.delete(opts, :otp_app)
       @config RBMQ.Config.get(__MODULE__, opts)
 
       defp connect(timeout \\ 10_000) do
-        case Connector.open_connection(@config) do
+        case Helper.open_connection(@config) do
           {:ok, conn} ->
             # Get notifications when the connection goes down
             # Process.monitor(conn.pid)

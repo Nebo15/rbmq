@@ -1,8 +1,8 @@
-defmodule RBMQ.ConnectorTest do
+defmodule RBMQ.ConnectionHelperTest do
   use ExUnit.Case, async: true
-  import RBMQ.Connector
+  import RBMQ.Connection.Helper
   use AMQP
-  doctest RBMQ.Connector
+  doctest RBMQ.Connection.Helper
 
   test "invalid host raise exception" do
     assert_raise RuntimeError, "AQMP connection was refused", fn ->

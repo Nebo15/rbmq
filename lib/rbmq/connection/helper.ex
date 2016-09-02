@@ -1,4 +1,4 @@
-defmodule RBMQ.Connector do
+defmodule RBMQ.Connection.Helper do
   @moduledoc """
   Helper functions to manage connections with AQMP.
 
