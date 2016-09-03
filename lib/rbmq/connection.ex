@@ -29,7 +29,7 @@ defmodule RBMQ.Connection do
       end
 
       def config do
-        unquote(RBMQ.Config.get(__MODULE__, opts))
+        RBMQ.Config.get(__MODULE__, opts)
       end
 
       def close do
