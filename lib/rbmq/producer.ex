@@ -10,38 +10,44 @@ defmodule RBMQ.Producer do
     quote bind_quoted: [opts: opts] do
       use RBMQ.GenQueue, opts
 
-      unless @channel_conf[:queue][:routing_key] do
-        raise "You need to set queue routing key in #{__MODULE__} options."
-      end
+      defp validate_config!(config) do
+        unless config[:queue][:routing_key] do
+          raise "You need to set queue routing key in #{__MODULE__} options."
+        end
 
-      case @channel_conf[:queue][:routing_key] do
-        {:system, _, _} -> :ok
-        {:system, _} -> :ok
-        str when is_binary(str) -> :ok
-        unknown -> raise "Queue routing key for #{__MODULE__} must be a string or env link, '#{inspect unknown}' given."
-      end
+        case config[:queue][:routing_key] do
+          {:system, _, _} -> :ok
+          {:system, _} -> :ok
+          str when is_binary(str) -> :ok
+          unknown -> raise "Queue routing key for #{__MODULE__} must be a string or env link, " <>
+                           "'#{inspect unknown}' given."
+        end
 
-      unless @channel_conf[:exchange] do
-        raise "You need to configure exchange in #{__MODULE__} options."
-      end
+        unless config[:exchange] do
+          raise "You need to configure exchange in #{__MODULE__} options."
+        end
 
-      unless @channel_conf[:exchange][:name] do
-        raise "You need to set exchange name in #{__MODULE__} options."
-      end
+        unless config[:exchange][:name] do
+          raise "You need to set exchange name in #{__MODULE__} options."
+        end
 
-      case @channel_conf[:exchange][:name] do
-        {:system, _, _} -> :ok
-        {:system, _} -> :ok
-        str when is_binary(str) -> :ok
-        unknown -> raise "Exchange name key for #{__MODULE__} must be a string or env link, '#{inspect unknown}' given."
-      end
+        case config[:exchange][:name] do
+          {:system, _, _} -> :ok
+          {:system, _} -> :ok
+          str when is_binary(str) -> :ok
+          unknown -> raise "Exchange name key for #{__MODULE__} must be a string or env link, " <>
+                           "'#{inspect unknown}' given."
+        end
 
-      unless @channel_conf[:exchange][:type] do
-        raise "You need to set exchange name in #{__MODULE__} options."
-      end
+        unless config[:exchange][:type] do
+          raise "You need to set exchange name in #{__MODULE__} options."
+        end
 
-      unless @channel_conf[:exchange][:type] in [:direct, :fanout, :topic, :headers] do
-        raise "Incorrect exchange type in #{__MODULE__} options."
+        unless config[:exchange][:type] in [:direct, :fanout, :topic, :headers] do
+          raise "Incorrect exchange type in #{__MODULE__} options."
+        end
+
+        config
       end
 
       @doc """

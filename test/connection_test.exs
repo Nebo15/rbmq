@@ -21,6 +21,11 @@ defmodule RBMQ.ConnectionTest do
       ]
   end
 
+  defmodule TestConnectionWithExternalConfig do
+    use RBMQ.Connection,
+      otp_app: :rbmq
+  end
+
   defmodule TestConnectionWithoutConfig do
     use RBMQ.Connection,
       otp_app: :rbmq
@@ -83,6 +88,17 @@ defmodule RBMQ.ConnectionTest do
     assert {:ok, _} = TestConnectionWithoutConfig.spawn_channel(:somename)
 
     %AMQP.Channel{conn: conn} = TestConnectionWithoutConfig.get_channel(:somename)
+    assert :ok = AMQP.Connection.close(conn)
+  end
+
+  test "reads external config" do
+    System.put_env("CUST_MQ_HOST", "localhost")
+    System.put_env("CUST_MQ_PORT", "5672")
+
+    TestConnectionWithExternalConfig.start_link
+    assert {:ok, _} = TestConnectionWithExternalConfig.spawn_channel(:somename)
+
+    %AMQP.Channel{conn: conn} = TestConnectionWithExternalConfig.get_channel(:somename)
     assert :ok = AMQP.Connection.close(conn)
   end
 

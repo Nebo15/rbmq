@@ -27,7 +27,7 @@ defmodule RBMQ.Consumer do
       @doc false
       def handle_info({:DOWN, monitor_ref, :process, pid, reason}, state) do
         Process.demonitor(monitor_ref)
-        state = link_consumer(nil, @channel_conf[:queue][:name])
+        state = link_consumer(nil, _config[:queue][:name])
         {:noreply, state}
       end
 

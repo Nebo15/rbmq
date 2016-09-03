@@ -5,7 +5,7 @@ defmodule RBMQ.Connection do
 
   @doc false
   defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts] do
+    quote bind_quoted: [opts: opts], location: :keep do
       use Supervisor
       require Logger
       alias AMQP.Connection
@@ -13,9 +13,10 @@ defmodule RBMQ.Connection do
 
       @guard_name String.to_atom("#{__MODULE__}.Guard")
       @worker_config Keyword.delete(opts, :otp_app)
+      @inline_options opts
 
       def connect(timeout \\ 10_000) do
-        case Helper.open_connection(config) do
+        case Helper.open_connection(config()) do
           {:ok, conn} ->
             # Get notifications when the connection goes down
             RBMQ.Connection.Guard.monitor(@guard_name, conn.pid)
@@ -29,7 +30,7 @@ defmodule RBMQ.Connection do
       end
 
       def config do
-        RBMQ.Config.get(__MODULE__, opts)
+        RBMQ.Config.get(__MODULE__, @inline_options)
       end
 
       def close do
@@ -50,8 +51,8 @@ defmodule RBMQ.Connection do
         RBMQ.Connection.Channel.get(name)
       end
 
-      def configure_channel(name, config) do
-        RBMQ.Connection.Channel.set_config(name, config)
+      def configure_channel(name, conf) do
+        RBMQ.Connection.Channel.set_config(name, conf)
       end
 
       def close_channel(name) do

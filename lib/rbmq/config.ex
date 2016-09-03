@@ -83,17 +83,21 @@ defmodule RBMQ.Config do
       nil ->
         params
       _ ->
-        {_, params} = Keyword.get_and_update(params, :port, fn port ->
-          case cast_integer(port) do
-            :error ->
-              raise ArgumentError, "can not convert AMQP port to an integer"
-            port_int ->
-              {port, port_int}
-          end
-        end)
-
-        params
+        _normalize_port(params)
     end
+  end
+
+  defp _normalize_port(params) do
+    {_, params} = Keyword.get_and_update(params, :port, fn port ->
+      case cast_integer(port) do
+        :error ->
+          raise ArgumentError, "can not convert AMQP port to an integer"
+        port_int ->
+          {port, port_int}
+      end
+    end)
+
+    params
   end
 
   defp cast_integer(var) do
@@ -115,7 +119,13 @@ defmodule RBMQ.Config do
   end
 
   defp add_params(params, add) do
-    add
-    |> Keyword.merge(params)
+    Keyword.merge(add, params, fn _k, v1, v2 ->
+      case is_list(v1) && is_list(v2) do
+        true ->
+          add_params(v1, v2)
+        false ->
+          v2
+      end
+    end)
   end
 end

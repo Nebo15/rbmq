@@ -34,7 +34,8 @@ defmodule RBMQ.Connection.Guard do
     conn = apply(mod, :connect, [])
 
     # Update all childs
-    Supervisor.which_children(mod)
+    mod
+    |> Supervisor.which_children()
     |> Enum.filter(fn {_, child, type, _} ->
       is_pid(child) && Process.alive?(child) && type == :worker
     end)

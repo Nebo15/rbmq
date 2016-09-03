@@ -9,38 +9,14 @@ defmodule RBMQ.GenQueue do
 
       @connection Keyword.get(opts, :connection)
       @channel_name String.to_atom("#{__MODULE__}.Channel")
-
-      inline_conf = Keyword.delete(opts, :connection)
-      case opts[:otp_app] do
-        nil ->
-          @channel_conf RBMQ.Config.substitute_env(inline_conf)
-        otp_app ->
-          @channel_conf inline_conf
-          |> Keyword.merge([otp_app: otp_app])
-          |> (&RBMQ.Config.get(__MODULE__, &1)).()
-      end
+      @inline_options opts
 
       unless @connection do
         raise "You need to implement connection module and pass it in :connection option."
       end
 
-      unless @channel_conf[:queue] do
-        raise "You need to configure queue in #{__MODULE__} options."
-      end
-
-      unless @channel_conf[:queue][:name] do
-        raise "You need to set queue name in #{__MODULE__} options."
-      end
-
-      case @channel_conf[:queue][:name] do
-        {:system, _, _} -> :ok
-        {:system, _} -> :ok
-        str when is_binary(str) -> :ok
-        unknown -> raise "Queue name for #{__MODULE__} must be a string or env link, '#{inspect unknown}' given."
-      end
-
       def start_link do
-        GenServer.start_link(__MODULE__, @channel_conf, name: __MODULE__)
+        GenServer.start_link(__MODULE__, _config, name: __MODULE__)
       end
 
       def init(opts) do
@@ -61,6 +37,46 @@ defmodule RBMQ.GenQueue do
 
       defp init_worker(chan, _opts) do
         chan
+      end
+
+      defp _config do
+        inline_config = @inline_options
+        |> Keyword.delete(:connection)
+
+        case Keyword.has_key?(inline_config, :otp_app) do
+          true ->
+            __MODULE__
+            |> RBMQ.Config.get(inline_config)
+            |> _validate_config!
+          false ->
+            inline_config
+            |> RBMQ.Config.substitute_env
+            |> _validate_config!
+        end
+      end
+
+      defp _validate_config!(conf) do
+        unless conf[:queue] do
+          raise "You need to configure queue in #{__MODULE__} options."
+        end
+
+        unless conf[:queue][:name] do
+          raise "You need to set queue name in #{__MODULE__} options."
+        end
+
+        case conf[:queue][:name] do
+          {:system, _, _} -> :ok
+          {:system, _} -> :ok
+          str when is_binary(str) -> :ok
+          unknown -> raise "Queue name for #{__MODULE__} must be a string or env link, '#{inspect unknown}' given."
+        end
+
+        conf
+        |> validate_config!
+      end
+
+      defp validate_config!(conf) do
+        conf
       end
 
       defp get_channel do
@@ -95,7 +111,7 @@ defmodule RBMQ.GenQueue do
         end
       end
 
-      defoverridable [init_worker: 2]
+      defoverridable [init_worker: 2, validate_config!: 1]
     end
   end
 

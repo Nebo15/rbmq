@@ -27,6 +27,22 @@ defmodule RBMQ.ProducerTest do
       ]
   end
 
+  defmodule TestProducerWithExternalConfig do
+    use RBMQ.Producer,
+      otp_app: :rbmq,
+      connection: ProducerTestConnection,
+      queue: [
+        error_name: "producer_test_qeueue_errors",
+        routing_key: "producer_test_qeueue",
+        durable: false
+      ],
+      exchange: [
+        name: "producer_test_qeueue_exchange",
+        type: :direct,
+        durable: false
+      ]
+  end
+
   setup_all do
     ProducerTestConnection.start_link
     TestProducer.start_link
@@ -74,12 +90,20 @@ defmodule RBMQ.ProducerTest do
     end
 
     # Wait till it respawns
-    :timer.sleep(1_000)
+    :timer.sleep(1_500)
 
     # Doesn't spawn additional connections
     assert Supervisor.count_children(ProducerTestConnection).active == 1
     assert Supervisor.count_children(ProducerTestConnection).workers == 1
 
     assert {:ok, %{message_count: 100, queue: @queue}} = TestProducer.status
+  end
+
+  test "reads external config" do
+    System.put_env("CUST_QUEUE_NAME", "producer_test_qeueue")
+    TestProducerWithExternalConfig.start_link
+    System.delete_env("CUST_QUEUE_NAME")
+
+    assert :ok == TestProducer.publish(%{example: true})
   end
 end
