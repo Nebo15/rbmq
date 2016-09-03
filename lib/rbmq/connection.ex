@@ -13,10 +13,9 @@ defmodule RBMQ.Connection do
 
       @guard_name String.to_atom("#{__MODULE__}.Guard")
       @worker_config Keyword.delete(opts, :otp_app)
-      @config RBMQ.Config.get(__MODULE__, opts)
 
       def connect(timeout \\ 10_000) do
-        case Helper.open_connection(@config) do
+        case Helper.open_connection(config) do
           {:ok, conn} ->
             # Get notifications when the connection goes down
             RBMQ.Connection.Guard.monitor(@guard_name, conn.pid)
@@ -27,6 +26,10 @@ defmodule RBMQ.Connection do
             :timer.sleep(timeout)
             connect
         end
+      end
+
+      def config do
+        unquote(RBMQ.Config.get(__MODULE__, opts))
       end
 
       def close do
