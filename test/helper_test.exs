@@ -1,11 +1,11 @@
-defmodule RBMQ.ConnectorTest do
-  use ExUnit.Case
-  import RBMQ.Connector
+defmodule RBMQ.ConnectionHelperTest do
+  use ExUnit.Case, async: true
+  import RBMQ.Connection.Helper
   use AMQP
-  doctest RBMQ.Connector
+  doctest RBMQ.Connection.Helper
 
   test "invalid host raise exception" do
-    assert_raise RuntimeError, "AQMP connection was refused", fn ->
+    assert_raise RuntimeError, "AMQP connection was refused", fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, port: 1234])
       |> open_connection!
@@ -13,7 +13,7 @@ defmodule RBMQ.ConnectorTest do
   end
 
   test "timeout raises exception" do
-    assert_raise RuntimeError, "AQMP connection timeout", fn ->
+    assert_raise RuntimeError, "AMQP connection timeout", fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, host: "example.com", connection_timeout: 50])
       |> open_connection!
@@ -21,24 +21,32 @@ defmodule RBMQ.ConnectorTest do
   end
 
   test "invalid credentials raise exception" do
-    assert_raise RuntimeError, ~r/AQMP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
+    assert_raise RuntimeError, ~r/AMQP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, password: "1234"])
       |> open_connection!
     end
   end
 
-    test "invalid vhost raise exception" do
-    assert_raise RuntimeError, ~r/AQMP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
+  test "invalid vhost raise exception" do
+    assert_raise RuntimeError, ~r/AMQP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
       RBMQ.ConfigTest
       |> RBMQ.Config.get([otp_app: :rbmq, password: "1234"])
       |> open_connection!
     end
+  end
+
+  test "channel closes" do
+    RBMQ.ConfigTest
+    |> RBMQ.Config.get([otp_app: :rbmq])
+    |> open_connection!
+    |> open_channel!
+    |> close_channel
   end
 
   test "producer connection initializes" do
-    queue_name = "test_queue"
-    queue_exchange = "test_exchange"
+    queue_name = "test_queue_for_producer"
+    queue_exchange = "test_exchange_for_producer"
 
     RBMQ.ConfigTest
     |> RBMQ.Config.get([otp_app: :rbmq])
@@ -50,7 +58,7 @@ defmodule RBMQ.ConnectorTest do
   end
 
   test "consumer connection initializes" do
-    queue_name = "test_queue"
+    queue_name = "test_queue_for_consumer"
 
     RBMQ.ConfigTest
     |> RBMQ.Config.get([otp_app: :rbmq])

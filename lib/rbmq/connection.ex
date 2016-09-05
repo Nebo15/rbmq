@@ -1,24 +1,25 @@
 defmodule RBMQ.Connection do
   @moduledoc """
-  AQMP connection supervisor.
+  AMQP connection supervisor.
   """
 
   @doc false
   defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts] do
+    quote bind_quoted: [opts: opts], location: :keep do
       use Supervisor
       require Logger
       alias AMQP.Connection
-      alias RBMQ.Connector
+      alias RBMQ.Connection.Helper
 
+      @guard_name String.to_atom("#{__MODULE__}.Guard")
       @worker_config Keyword.delete(opts, :otp_app)
-      @config RBMQ.Config.get(__MODULE__, opts)
+      @inline_options opts
 
-      defp connect(timeout \\ 10_000) do
-        case Connector.open_connection(@config) do
+      def connect(timeout \\ 10_000) do
+        case Helper.open_connection(config()) do
           {:ok, conn} ->
             # Get notifications when the connection goes down
-            Process.monitor(conn.pid)
+            RBMQ.Connection.Guard.monitor(@guard_name, conn.pid)
             conn
           {:error, _} ->
             Logger.warn "Trying to restart connection in #{inspect timeout} microseconds"
@@ -28,24 +29,18 @@ defmodule RBMQ.Connection do
         end
       end
 
-      def handle_info({:DOWN, _, :process, _pid, _reason}, state) do
-        Logger.error "AQMP connection went down"
+      def config do
+        RBMQ.Config.get(__MODULE__, @inline_options)
+      end
 
-        conn = [connection: connect(), config: @worker_config]
-
-        # Tell all open channels to update their connections
-        __MODULE__
-        |> Supervisor.which_children
-        |> Enum.filter(fn {_, child, type, _} -> is_pid(child) && type == :worker end)
-        |> Enum.map(fn {_, child, _, _} ->
-          RBMQ.Connection.Channel.reconnect(child, conn)
-        end)
-
-        {:noreply, state}
+      def close do
+        Process.exit(@guard_name, :normal)
+        Supervisor.stop(__MODULE__)
       end
 
       def start_link do
-        Supervisor.start_link(__MODULE__, [connection: connect(), config: @worker_config], name: __MODULE__)
+        RBMQ.Connection.Guard.start_link(__MODULE__, @guard_name)
+        Supervisor.start_link(__MODULE__, [], name: __MODULE__)
       end
 
       def spawn_channel(name) do
@@ -56,9 +51,21 @@ defmodule RBMQ.Connection do
         RBMQ.Connection.Channel.get(name)
       end
 
-      def init(conn) do
+      def configure_channel(name, conf) do
+        RBMQ.Connection.Channel.set_config(name, conf)
+      end
+
+      def close_channel(name) do
+        pid = Process.whereis(name)
+        :ok = RBMQ.Connection.Channel.close(pid)
+        Supervisor.terminate_child(__MODULE__, pid)
+      end
+
+      def init(_conf) do
+        conf = [connection: connect(), config: @worker_config]
+
         children = [
-          worker(RBMQ.Connection.Channel, [conn], restart: :transient)
+          worker(RBMQ.Connection.Channel, [conf], restart: :transient)
         ]
 
         supervise(children, strategy: :simple_one_for_one)

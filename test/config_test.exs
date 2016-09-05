@@ -5,10 +5,10 @@ defmodule RBMQ.ConfigTest do
   test "parse config" do
     setup_default_env
 
-    assert [host: "localhost",
-            port: 5672,
-            username: "guest",
-            password: "guest",
+    assert [host: "testhost",
+            port: 1011,
+            username: "testuser",
+            password: "pass",
             virtual_host: "foohost",
             connection_timeout: 15_000,
             prefetch_count: "10",
@@ -24,9 +24,9 @@ defmodule RBMQ.ConfigTest do
     System.put_env("BAR", "foo")
 
     assert [host: "somehost",
-            port: 5672,
-            username: "guest",
-            password: "guest",
+            port: 1011,
+            username: "testuser",
+            password: "pass",
             virtual_host: "foohost",
             connection_timeout: 15_000,
             prefetch_count: "10",
@@ -73,18 +73,27 @@ defmodule RBMQ.ConfigTest do
             connection_timeout: 15_000] = RBMQ.Config.get(__MODULE__)
   end
 
+  test "works with unexistent app" do
+    assert [host: "localhost",
+            port: 5672,
+            username: "guest",
+            password: "guest",
+            virtual_host: "/",
+            connection_timeout: 15_000] = RBMQ.Config.get(__MODULE__, [otp_app: :myapp])
+  end
+
   test "defaults reads env" do
-    System.put_env("AQMP_HOST", "somehost")
-    System.put_env("AQMP_PORT", "1234")
-    System.put_env("AQMP_USER", "foo")
-    System.put_env("AQMP_PASSWORD", "bar")
-    System.put_env("AQMP_VHOST", "foohost")
+    System.put_env("AMQP_HOST", "somehost")
+    System.put_env("AMQP_PORT", "1234")
+    System.put_env("AMQP_USER", "foo")
+    System.put_env("AMQP_PASSWORD", "bar")
+    System.put_env("AMQP_VHOST", "foohost")
     res = RBMQ.Config.get(__MODULE__, [otp_app: :rbmq])
-    System.delete_env("AQMP_HOST")
-    System.delete_env("AQMP_PORT")
-    System.delete_env("AQMP_USER")
-    System.delete_env("AQMP_PASSWORD")
-    System.delete_env("AQMP_VHOST")
+    System.delete_env("AMQP_HOST")
+    System.delete_env("AMQP_PORT")
+    System.delete_env("AMQP_USER")
+    System.delete_env("AMQP_PASSWORD")
+    System.delete_env("AMQP_VHOST")
 
     assert [host: "somehost",
             port: 1234,
@@ -96,10 +105,10 @@ defmodule RBMQ.ConfigTest do
 
   defp setup_default_env do
     Application.put_env(:rbmq, __MODULE__, [
-       host: {:system, "HOST", "localhost"},
-       port: "5672",
-       username: "guest",
-       password: "guest",
+       host: {:system, "HOST", "testhost"},
+       port: "1011",
+       username: "testuser",
+       password: "pass",
        virtual_host: "foohost",
        connection_timeout: 15_000,
        prefetch_count: "10",

@@ -4,16 +4,16 @@ defmodule RBMQ.Config do
   """
 
   @defaults [
-    host: {:system, "AQMP_HOST", "localhost"},
-    port: {:system, "AQMP_PORT", 5672},
-    username: {:system, "AQMP_USER", "guest"},
-    password: {:system, "AQMP_PASSWORD", "guest"},
-    virtual_host: {:system, "AQMP_VHOST", "/"},
-    connection_timeout: {:system, "AQMP_TIMEOUT", 15_000},
+    host: {:system, "AMQP_HOST", "localhost"},
+    port: {:system, "AMQP_PORT", 5672},
+    username: {:system, "AMQP_USER", "guest"},
+    password: {:system, "AMQP_PASSWORD", "guest"},
+    virtual_host: {:system, "AMQP_VHOST", "/"},
+    connection_timeout: {:system, "AMQP_TIMEOUT", 15_000},
   ]
 
   @doc """
-  Read configuration from environment.
+  Read configuration from environment and application configuration.
 
   You can use `{:system, "ENV", default_value}` or `{:system, "ENV"}` tuple to read
   configuration from environment variables in runtime.
@@ -31,7 +31,7 @@ defmodule RBMQ.Config do
 
   Read configs:
 
-    Rbmq.Config.get(MyApp.ConsumerQueue, :rbmq)
+    RBMQ.Config.get(MyApp.ConsumerQueue, :rbmq)
 
   """
   def get(module, opts \\ [otp_app: :rbmq]) do
@@ -43,14 +43,22 @@ defmodule RBMQ.Config do
     |> parse
   end
 
-  defp parse(params) when is_list(params) do
+  @doc """
+  Replace all :system tuples in map with environment variable name or default value.
+  """
+  def substitute_env(params) do
     params
     |> Enum.map(fn {k, v} -> {k, parse_entry(v)} end)
+  end
+
+  defp parse(params) when is_list(params) do
+    params
+    |> substitute_env
     |> normalize_port
   end
 
   defp parse(_) do
-    raise ArgumentError, "AQMP params must be a list. " <>
+    raise ArgumentError, "AMQP params must be a list. " <>
                          "See https://hexdocs.pm/amqp/AMQP.Connection.html#open/1"
   end
 
@@ -62,15 +70,28 @@ defmodule RBMQ.Config do
     System.get_env(env)
   end
 
+  def parse_entry(list) when is_list(list) do
+    substitute_env(list)
+  end
+
   def parse_entry(value) do
     value
   end
 
   defp normalize_port(params) do
+    case Keyword.get(params, :port) do
+      nil ->
+        params
+      _ ->
+        _normalize_port(params)
+    end
+  end
+
+  defp _normalize_port(params) do
     {_, params} = Keyword.get_and_update(params, :port, fn port ->
       case cast_integer(port) do
         :error ->
-          raise ArgumentError, "can not convert AQMP port to an integer"
+          raise ArgumentError, "can not convert AMQP port to an integer"
         port_int ->
           {port, port_int}
       end
@@ -98,7 +119,13 @@ defmodule RBMQ.Config do
   end
 
   defp add_params(params, add) do
-    add
-    |> Keyword.merge(params)
+    Keyword.merge(add, params, fn _k, v1, v2 ->
+      case is_list(v1) && is_list(v2) do
+        true ->
+          add_params(v1, v2)
+        false ->
+          v2
+      end
+    end)
   end
 end

@@ -1,3 +1,3 @@
 ExUnit.start()
-# TODO: disable to don't spam consoler on tests
+# Comment this line it you want to have verbose console output
 Logger.remove_backend(:console)

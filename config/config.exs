@@ -21,23 +21,19 @@ use Mix.Config
 #     config :logger, level: :info
 #
 
-# config :rbmq,
-#   host: {:system, "HOST", "localhost"},
-#   port: "5672",
-#   username: "guest",
-#   password: "guest",
-#   prefetch_count: "10",
-#   amqp_exchange: "rbmq_exchange",
-#   foo: {:system, "BAR"}
-
-config :rbmq, amqp_exchange: "rbmq_exchange"
-config :rbmq, prefetch_count: "10"
-config :rbmq, amqp_params: [
-  host: "localhost",
-  port: "5672",
-  username: "guest",
-  password: "guest",
-]
-
 # Disable logger if you don't want to see verbose messages
 # config :logger, level: :info
+
+# RabbitMQ config
+config :rbmq, RBMQ.ConnectionTest.TestConnectionWithExternalConfig,
+    host: {:system, "CUST_MQ_HOST", "other_host"},
+    port: {:system, "CUST_MQ_PORT", 1234},
+    username: {:system, "MQ_USER", "guest"},
+    password: {:system, "MQ_PASSWORD", "guest"},
+    virtual_host: {:system, "MQ_VHOST", "/"},
+    connection_timeout: {:system, "MQ_TIMEOUT", 15_000}
+
+config :rbmq, RBMQ.ProducerTest.TestProducerWithExternalConfig,
+  queue: [
+    name: {:system, "CUST_QUEUE_NAME"},
+  ]
