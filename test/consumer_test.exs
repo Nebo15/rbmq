@@ -5,14 +5,14 @@ defmodule RBMQ.ConsumerTest do
 
   @queue "consumer_test_qeueue"
 
-  defmodule ProducerTestConnection do
+  defmodule ProducerTestConnection4Cons do
     use RBMQ.Connection,
       otp_app: :rbmq
   end
 
   defmodule TestProducer do
     use RBMQ.Producer,
-      connection: ProducerTestConnection,
+      connection: ProducerTestConnection4Cons,
       queue: [
         name: "consumer_test_qeueue",
         error_name: "consumer_test_qeueue_errors",
@@ -28,7 +28,7 @@ defmodule RBMQ.ConsumerTest do
 
   defmodule TestConsumer do
     use RBMQ.Consumer,
-      connection: ProducerTestConnection,
+      connection: ProducerTestConnection4Cons,
       queue: [
         name: "consumer_test_qeueue",
         error_name: "consumer_test_qeueue_errors",
@@ -45,14 +45,14 @@ defmodule RBMQ.ConsumerTest do
   end
 
   setup_all do
-    ProducerTestConnection.start_link
+    ProducerTestConnection4Cons.start_link
     TestProducer.start_link
     TestConsumer.start_link
     :ok
   end
 
   setup do
-    chan = ProducerTestConnection.get_channel(RBMQ.ConsumerTest.TestConsumer.Channel)
+    chan = ProducerTestConnection4Cons.get_channel(RBMQ.ConsumerTest.TestConsumer.Channel)
     AMQP.Queue.purge(chan, @queue)
     [channel: chan]
   end
