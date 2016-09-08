@@ -10,12 +10,12 @@ defmodule RBMQ.Producer do
     quote bind_quoted: [opts: opts] do
       use RBMQ.GenQueue, opts
 
-      defp validate_config!(config) do
-        unless config[:queue][:routing_key] do
+      defp validate_config!(conf) do
+        unless conf[:queue][:routing_key] do
           raise "You need to set queue routing key in #{__MODULE__} options."
         end
 
-        case config[:queue][:routing_key] do
+        case conf[:queue][:routing_key] do
           {:system, _, _} -> :ok
           {:system, _} -> :ok
           str when is_binary(str) -> :ok
@@ -23,15 +23,15 @@ defmodule RBMQ.Producer do
                            "'#{inspect unknown}' given."
         end
 
-        unless config[:exchange] do
+        unless conf[:exchange] do
           raise "You need to configure exchange in #{__MODULE__} options."
         end
 
-        unless config[:exchange][:name] do
+        unless conf[:exchange][:name] do
           raise "You need to set exchange name in #{__MODULE__} options."
         end
 
-        case config[:exchange][:name] do
+        case conf[:exchange][:name] do
           {:system, _, _} -> :ok
           {:system, _} -> :ok
           str when is_binary(str) -> :ok
@@ -39,15 +39,15 @@ defmodule RBMQ.Producer do
                            "'#{inspect unknown}' given."
         end
 
-        unless config[:exchange][:type] do
+        unless conf[:exchange][:type] do
           raise "You need to set exchange name in #{__MODULE__} options."
         end
 
-        unless config[:exchange][:type] in [:direct, :fanout, :topic, :headers] do
+        unless conf[:exchange][:type] in [:direct, :fanout, :topic, :headers] do
           raise "Incorrect exchange type in #{__MODULE__} options."
         end
 
-        config
+        conf
       end
 
       @doc """
@@ -74,11 +74,13 @@ defmodule RBMQ.Producer do
       end
 
       defp cast(chan, data) do
-        is_persistent = Keyword.get(config[:queue], :durable, false)
+        conf = chan_config
+
+        is_persistent = Keyword.get(conf[:queue], :durable, false)
 
         case AMQP.Basic.publish(chan,
-                                config[:exchange][:name],
-                                config[:queue][:routing_key],
+                                conf[:exchange][:name],
+                                conf[:queue][:routing_key],
                                 data,
                                 [mandatory: true,
                                  persistent: is_persistent]) do
@@ -88,6 +90,8 @@ defmodule RBMQ.Producer do
             {:reply, :error, chan}
         end
       end
+
+      defoverridable [validate_config!: 1]
     end
   end
 

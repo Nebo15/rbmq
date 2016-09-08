@@ -27,11 +27,11 @@ use Mix.Config
 # RabbitMQ config
 config :rbmq, RBMQ.ConnectionTest.TestConnectionWithExternalConfig,
     host: {:system, "CUST_MQ_HOST", "other_host"},
-    port: {:system, "CUST_MQ_PORT", 1234},
+    port: {:system, :integer, "CUST_MQ_PORT", 1234},
     username: {:system, "MQ_USER", "guest"},
     password: {:system, "MQ_PASSWORD", "guest"},
     virtual_host: {:system, "MQ_VHOST", "/"},
-    connection_timeout: {:system, "MQ_TIMEOUT", 15_000}
+    connection_timeout: {:system, :integer, "MQ_TIMEOUT", 15_000}
 
 config :rbmq, RBMQ.ProducerTest.TestProducerWithExternalConfig,
   queue: [

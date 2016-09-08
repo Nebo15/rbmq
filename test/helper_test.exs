@@ -1,44 +1,55 @@
-defmodule RBMQ.ConnectionHelperTest do
-  use ExUnit.Case, async: true
+defmodule RBMQ.Connection.HelperTest do
+  use ExUnit.Case
   import RBMQ.Connection.Helper
   use AMQP
   doctest RBMQ.Connection.Helper
 
+  defmodule SampleConfigurator do
+    use Confex, otp_app: :rbmq
+  end
+
+  setup do
+    Application.delete_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator)
+  end
+
   test "invalid host raise exception" do
+    Application.put_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator, [port: 1234])
+
     assert_raise RuntimeError, "AMQP connection was refused", fn ->
-      RBMQ.ConfigTest
-      |> RBMQ.Config.get([otp_app: :rbmq, port: 1234])
+      SampleConfigurator.config
       |> open_connection!
     end
   end
 
   test "timeout raises exception" do
+    Application.put_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator, [host: "example.com", connection_timeout: 50])
+
     assert_raise RuntimeError, "AMQP connection timeout", fn ->
-      RBMQ.ConfigTest
-      |> RBMQ.Config.get([otp_app: :rbmq, host: "example.com", connection_timeout: 50])
+      SampleConfigurator.config
       |> open_connection!
     end
   end
 
   test "invalid credentials raise exception" do
+    Application.put_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator, [password: "1234"])
+
     assert_raise RuntimeError, ~r/AMQP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
-      RBMQ.ConfigTest
-      |> RBMQ.Config.get([otp_app: :rbmq, password: "1234"])
+      SampleConfigurator.config
       |> open_connection!
     end
   end
 
   test "invalid vhost raise exception" do
-    assert_raise RuntimeError, ~r/AMQP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
-      RBMQ.ConfigTest
-      |> RBMQ.Config.get([otp_app: :rbmq, password: "1234"])
+    Application.put_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator, [virtual_host: "somevhost"])
+
+    assert_raise RuntimeError, "AMQP vhost not allowed", fn ->
+      SampleConfigurator.config
       |> open_connection!
     end
   end
 
   test "channel closes" do
-    RBMQ.ConfigTest
-    |> RBMQ.Config.get([otp_app: :rbmq])
+    SampleConfigurator.config
     |> open_connection!
     |> open_channel!
     |> close_channel
@@ -48,8 +59,7 @@ defmodule RBMQ.ConnectionHelperTest do
     queue_name = "test_queue_for_producer"
     queue_exchange = "test_exchange_for_producer"
 
-    RBMQ.ConfigTest
-    |> RBMQ.Config.get([otp_app: :rbmq])
+    SampleConfigurator.config
     |> open_connection!
     |> open_channel!
     |> declare_queue(queue_name, queue_name <> "_error", durable: true)
@@ -60,8 +70,7 @@ defmodule RBMQ.ConnectionHelperTest do
   test "consumer connection initializes" do
     queue_name = "test_queue_for_consumer"
 
-    RBMQ.ConfigTest
-    |> RBMQ.Config.get([otp_app: :rbmq])
+    SampleConfigurator.config
     |> open_connection!
     |> open_channel!
     |> set_channel_qos(prefetch_count: 100)

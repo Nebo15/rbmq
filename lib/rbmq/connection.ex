@@ -5,8 +5,9 @@ defmodule RBMQ.Connection do
 
   @doc false
   defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts], location: :keep do
+    quote bind_quoted: [opts: opts] do
       use Supervisor
+      use Confex, opts
       require Logger
       alias AMQP.Connection
       alias RBMQ.Connection.Helper
@@ -27,10 +28,6 @@ defmodule RBMQ.Connection do
             :timer.sleep(timeout)
             connect
         end
-      end
-
-      def config do
-        RBMQ.Config.get(__MODULE__, @inline_options)
       end
 
       def close do

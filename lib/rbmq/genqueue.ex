@@ -5,18 +5,18 @@ defmodule RBMQ.GenQueue do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       use GenServer
+      use Confex, Keyword.delete(opts, :connection)
       require Logger
 
-      @connection Keyword.get(opts, :connection)
+      @connection Keyword.get(opts, :connection) || @module_config[:connection]
       @channel_name String.to_atom("#{__MODULE__}.Channel")
-      @inline_options opts
 
       unless @connection do
         raise "You need to implement connection module and pass it in :connection option."
       end
 
       def start_link do
-        GenServer.start_link(__MODULE__, _config, name: __MODULE__)
+        GenServer.start_link(__MODULE__, config(), name: __MODULE__)
       end
 
       def init(opts) do
@@ -39,23 +39,7 @@ defmodule RBMQ.GenQueue do
         chan
       end
 
-      defp _config do
-        inline_config = @inline_options
-        |> Keyword.delete(:connection)
-
-        case Keyword.has_key?(inline_config, :otp_app) do
-          true ->
-            __MODULE__
-            |> RBMQ.Config.get(inline_config)
-            |> _validate_config!
-          false ->
-            inline_config
-            |> RBMQ.Config.substitute_env
-            |> _validate_config!
-        end
-      end
-
-      defp _validate_config!(conf) do
+      defp validate_config(conf) do
         unless conf[:queue] do
           raise "You need to configure queue in #{__MODULE__} options."
         end
@@ -88,13 +72,13 @@ defmodule RBMQ.GenQueue do
         GenServer.call(__MODULE__, :status)
       end
 
-      defp config do
+      def chan_config do
         RBMQ.Connection.Channel.get_config(@channel_name)
       end
 
       def handle_call(:status, _from, chan) do
         safe_run fn(_) ->
-          {:reply, AMQP.Queue.status(chan, config[:queue][:name]), chan}
+          {:reply, AMQP.Queue.status(chan, chan_config[:queue][:name]), chan}
         end
       end
 

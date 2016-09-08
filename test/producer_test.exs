@@ -32,12 +32,12 @@ defmodule RBMQ.ProducerTest do
       otp_app: :rbmq,
       connection: ProducerTestConnection,
       queue: [
-        error_name: "producer_test_qeueue_errors",
-        routing_key: "producer_test_qeueue",
+        error_name: "ext_producer_test_qeueue_errors",
+        routing_key: "ext_producer_test_qeueue",
         durable: false
       ],
       exchange: [
-        name: "producer_test_qeueue_exchange",
+        name: "ext_producer_test_qeueue_exchange",
         type: :direct,
         durable: false
       ]
@@ -80,6 +80,9 @@ defmodule RBMQ.ProducerTest do
   end
 
   test "messages delivered when channel dies", context do
+    assert Supervisor.count_children(ProducerTestConnection).active == 1
+    assert Supervisor.count_children(ProducerTestConnection).workers == 1
+
     for n <- 1..100 do
       assert :ok == TestProducer.publish(n)
       if n == 20 do
@@ -100,7 +103,7 @@ defmodule RBMQ.ProducerTest do
   end
 
   test "reads external config" do
-    System.put_env("CUST_QUEUE_NAME", "producer_test_qeueue")
+    System.put_env("CUST_QUEUE_NAME", "ext_producer_test_qeueue")
     TestProducerWithExternalConfig.start_link
     System.delete_env("CUST_QUEUE_NAME")
 

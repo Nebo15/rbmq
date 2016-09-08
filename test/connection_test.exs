@@ -100,6 +100,9 @@ defmodule RBMQ.ConnectionTest do
 
     %AMQP.Channel{conn: conn} = TestConnectionWithExternalConfig.get_channel(:somename)
     assert :ok = AMQP.Connection.close(conn)
+
+    System.delete_env("CUST_MQ_HOST")
+    System.delete_env("CUST_MQ_PORT")
   end
 
   test "configures channel" do
