@@ -3,7 +3,7 @@
   "benchfella": {:hex, :benchfella, "0.3.3", "bbde48b5fe1ef556baa7ad933008e214e050e81ddb0916350715f5759fb35c0c", [:mix], []},
   "bunt": {:hex, :bunt, "0.1.6", "5d95a6882f73f3b9969fdfd1953798046664e6f77ec4e486e6fafc7caad97c6f", [:mix], []},
   "certifi": {:hex, :certifi, "0.4.0", "a7966efb868b179023618d29a407548f70c52466bf1849b9e8ebd0e34b7ea11f", [:rebar3], []},
-  "confex": {:hex, :confex, "1.4.0", "01c47f714639864f5b0e2394b7ffc0ad5e5fbc406fe527b2f3925bba7a852e94", [:mix], []},
+  "confex": {:hex, :confex, "1.4.1", "762cf6346b48b67010604f614e09c2219d68ee64f38bedc49be9e6ae40689cb9", [:mix], []},
   "connection": {:hex, :connection, "1.0.4", "a1cae72211f0eef17705aaededacac3eb30e6625b04a6117c1b2db6ace7d5976", [:mix], []},
   "credo": {:hex, :credo, "0.4.11", "03a64e9d53309b7132556284dda0be57ba1013885725124cfea7748d740c6170", [:mix], [{:bunt, "~> 0.1.6", [hex: :bunt, optional: false]}]},
   "db_connection": {:hex, :db_connection, "1.0.0-rc.5", "1d9ab6e01387bdf2de7a16c56866971f7c2f75aea7c69cae2a0346e4b537ae0d", [:mix], [{:connection, "~> 1.0.2", [hex: :connection, optional: false]}, {:poolboy, "~> 1.5", [hex: :poolboy, optional: true]}, {:sbroker, "~> 1.0.0-beta.3", [hex: :sbroker, optional: true]}]},
