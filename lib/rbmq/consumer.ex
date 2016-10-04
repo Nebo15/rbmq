@@ -1,8 +1,6 @@
 defmodule RBMQ.Consumer do
   @moduledoc """
-  AMQP channel producer.
-
-  You must configure connection (queue and exchange) before calling `publish/1` function.
+  AMQP channel consumer.
 
   TODO: take look at genevent and defimpl Stream (use as Stream) for consumers.
   """
