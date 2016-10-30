@@ -30,7 +30,7 @@ defmodule Rbmq.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [{:amqp_client, git: "https://github.com/jbrisbin/amqp_client.git", branch: "master", override: true},
-    {:poison, "~> 3.0"},
+    {:poison, "~> 2.0"},
     {:confex, "~> 1.0"},
     {:amqp, "0.1.5"},
     {:benchfella, "~> 0.3", only: [:dev, :test]},
