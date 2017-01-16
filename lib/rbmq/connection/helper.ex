@@ -164,13 +164,13 @@ defmodule RBMQ.Connection.Helper do
   def declare_queue(%Channel{} = chan, queue, error_queue, opts) when is_binary(error_queue) and error_queue != "" do
     Logger.debug "Declaring new queue '#{queue}' with dead letter queue '#{error_queue}'. Options: #{inspect opts}"
 
-    opts = Keyword.merge([
-      arguments: [
+    opts =
+      [arguments: [
         {"x-dead-letter-exchange", :longstr, ""},
         {"x-dead-letter-routing-key", :longstr, error_queue}
-      ]
-    ], opts)
-    |> env
+      ]]
+      |> Keyword.merge(opts)
+      |> env()
 
     Queue.declare(chan, env(error_queue), durable: true)
     Queue.declare(chan, env(queue), opts)
