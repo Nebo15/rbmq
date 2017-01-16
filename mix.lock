@@ -1,5 +1,5 @@
 %{"amqp": {:hex, :amqp, "0.1.5", "f38e30abfce06fd2213f5e24744a2923f9d3c30f1687db19952be547457e0e7b", [:mix], [{:amqp_client, "3.5.6", [hex: :amqp_client, optional: false]}]},
-  "amqp_client": {:git, "https://github.com/jbrisbin/amqp_client.git", "d50aec00b94f0766a048b4eceaf25ddfdeeb1d86", [branch: "master"]},
+  "amqp_client": {:git, "https://github.com/jbrisbin/amqp_client.git", "d50aec00b94f0766a048b4eceaf25ddfdeeb1d86", [tag: "rabbitmq-3.6.2"]},
   "benchfella": {:hex, :benchfella, "0.3.3", "bbde48b5fe1ef556baa7ad933008e214e050e81ddb0916350715f5759fb35c0c", [:mix], []},
   "bunt": {:hex, :bunt, "0.1.6", "5d95a6882f73f3b9969fdfd1953798046664e6f77ec4e486e6fafc7caad97c6f", [:mix], []},
   "confex": {:hex, :confex, "1.4.3", "3339202ef24fbdab0257dbce0cb0664eb44dd1e1040c4d8d71f14ee1e3a19e21", [:mix], []},
