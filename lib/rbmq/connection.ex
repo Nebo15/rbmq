@@ -26,7 +26,7 @@ defmodule RBMQ.Connection do
             Logger.warn "Trying to restart connection in #{inspect timeout} microseconds"
             # Reconnection loop
             :timer.sleep(timeout)
-            connect
+            connect()
         end
       end
 

@@ -8,12 +8,14 @@ defmodule RBMQ.Connection.HelperTest do
     use Confex, otp_app: :rbmq
   end
 
+  alias RBMQ.Connection.HelperTest.SampleConfigurator
+
   setup do
-    Application.delete_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator)
+    Application.delete_env(:rbmq, SampleConfigurator)
   end
 
   test "invalid host raise exception" do
-    Application.put_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator, [port: 1234])
+    Application.put_env(:rbmq, SampleConfigurator, [port: 1234])
 
     assert_raise RuntimeError, "AMQP connection was refused", fn ->
       SampleConfigurator.config
@@ -22,7 +24,7 @@ defmodule RBMQ.Connection.HelperTest do
   end
 
   test "timeout raises exception" do
-    Application.put_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator, [host: "example.com", connection_timeout: 50])
+    Application.put_env(:rbmq, SampleConfigurator, [host: "example.com", connection_timeout: 50])
 
     assert_raise RuntimeError, "AMQP connection timeout", fn ->
       SampleConfigurator.config
@@ -31,7 +33,7 @@ defmodule RBMQ.Connection.HelperTest do
   end
 
   test "invalid credentials raise exception" do
-    Application.put_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator, [password: "1234"])
+    Application.put_env(:rbmq, SampleConfigurator, [password: "1234"])
 
     assert_raise RuntimeError, ~r/AMQP authorization failed: 'ACCESS_REFUSED[^']*'/, fn ->
       SampleConfigurator.config
@@ -40,7 +42,7 @@ defmodule RBMQ.Connection.HelperTest do
   end
 
   test "invalid vhost raise exception" do
-    Application.put_env(:rbmq, RBMQ.Connection.HelperTest.SampleConfigurator, [virtual_host: "somevhost"])
+    Application.put_env(:rbmq, SampleConfigurator, [virtual_host: "somevhost"])
 
     assert_raise RuntimeError, "AMQP vhost not allowed", fn ->
       SampleConfigurator.config

@@ -10,7 +10,7 @@ defmodule RBMQ.Consumer do
     quote bind_quoted: [opts: opts] do
       use RBMQ.GenQueue, opts
 
-      defp init_worker(chan, opts) do
+      def init_worker(chan, opts) do
         link_consumer(chan, opts[:queue][:name])
         chan
       end
@@ -25,7 +25,7 @@ defmodule RBMQ.Consumer do
       @doc false
       def handle_info({:DOWN, monitor_ref, :process, pid, reason}, state) do
         Process.demonitor(monitor_ref)
-        state = link_consumer(nil, chan_config[:queue][:name])
+        state = link_consumer(nil, chan_config()[:queue][:name])
         {:noreply, state}
       end
 

@@ -10,7 +10,7 @@ defmodule RBMQ.Producer do
     quote bind_quoted: [opts: opts] do
       use RBMQ.GenQueue, opts
 
-      defp validate_config!(conf) do
+      def validate_config!(conf) do
         unless conf[:queue][:routing_key] do
           raise "You need to set queue routing key in #{__MODULE__} options."
         end
@@ -74,7 +74,7 @@ defmodule RBMQ.Producer do
       end
 
       defp cast(chan, data) do
-        conf = chan_config
+        conf = chan_config()
 
         is_persistent = Keyword.get(conf[:queue], :durable, false)
 

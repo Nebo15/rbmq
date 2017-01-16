@@ -28,18 +28,18 @@ defmodule RBMQ.GenQueue do
             @connection.spawn_channel(@channel_name)
             @connection.configure_channel(@channel_name, opts)
 
-            chan = get_channel
+            chan = get_channel()
             |> init_worker(opts)
 
             {:ok, chan}
         end
       end
 
-      defp init_worker(chan, _opts) do
+      def init_worker(chan, _opts) do
         chan
       end
 
-      defp validate_config(conf) do
+      def validate_config(conf) do
         unless conf[:queue] do
           raise "You need to configure queue in #{__MODULE__} options."
         end
@@ -59,7 +59,7 @@ defmodule RBMQ.GenQueue do
         |> validate_config!
       end
 
-      defp validate_config!(conf) do
+      def validate_config!(conf) do
         conf
       end
 
@@ -78,12 +78,12 @@ defmodule RBMQ.GenQueue do
 
       def handle_call(:status, _from, chan) do
         safe_run fn(_) ->
-          {:reply, AMQP.Queue.status(chan, chan_config[:queue][:name]), chan}
+          {:reply, AMQP.Queue.status(chan, chan_config()[:queue][:name]), chan}
         end
       end
 
       def safe_run(fun) do
-        chan = get_channel
+        chan = get_channel()
 
         case !is_nil(chan) && Process.alive?(chan.pid) do
           true ->
