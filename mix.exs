@@ -31,7 +31,7 @@ defmodule Rbmq.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:amqp_client, github: "jbrisbin/amqp_client", branch: "master", override: true},
+    [{:amqp_client, github: "jbrisbin/amqp_client", tag: "rabbitmq-3.6.2", override: true},
     {:poison, "~> 2.0"},
     {:confex, "~> 1.0"},
     {:amqp, "0.1.5"},
