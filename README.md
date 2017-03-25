@@ -9,19 +9,19 @@ The package can be installed as:
 
   1. Add `rbmq` to your list of dependencies in `mix.exs`:
 
-    ```elixir
-    def deps do
-      [{:rbmq, "~> 0.2.2"}]
-    end
-    ```
+  ```elixir
+  def deps do
+    [{:rbmq, "~> 0.2.2"}]
+  end
+  ```
 
   2. Ensure `rbmq` is started before your application:
 
-    ```elixir
-    def application do
-      [applications: [:rbmq]]
-    end
-    ```
+  ```elixir
+  def application do
+    [applications: [:rbmq]]
+  end
+  ```
 
 ## Configuration
 
@@ -55,83 +55,81 @@ Other connections settings can be found in [AMQP client docs](https://hexdocs.pm
 
   1. Define your connection
 
-    ```elixir
-    defmodule MyAMQPConnection do
-      use RBMQ.Connection,
-        otp_app: :my_app
-        # Optionally you can define queue params right here,
-        # but it's better to do so in producer and consumer separately
-    end
-    ```
+  ```elixir
+  defmodule MyAMQPConnection do
+    use RBMQ.Connection,
+      otp_app: :my_app
+      # Optionally you can define queue params right here,
+      # but it's better to do so in producer and consumer separately
+  end
+  ```
 
   2. Define your Producer and/or Consumer
 
-    ```elixir
-    defmodule MyProducer do
-      use RBMQ.Producer,
-        connection: MyAMQPConnection,
+  ```elixir
+  defmodule MyProducer do
+    use RBMQ.Producer,
+      connection: MyAMQPConnection,
 
-        # Queue params
-        queue: [
-          name: "prodcer_queue",
-          error_name: "prodcer_queue_errors",
-          routing_key: "prodcer_queue",
-          durable: false
-        ],
-        exchange: [
-          name: "prodcer_queue_exchange",
-          type: :direct,
-          durable: false
-        ]
+      # Queue params
+      queue: [
+        name: "prodcer_queue",
+        error_name: "prodcer_queue_errors",
+        routing_key: "prodcer_queue",
+        durable: false
+      ],
+      exchange: [
+        name: "prodcer_queue_exchange",
+        type: :direct,
+        durable: false
+      ]
+  end
+
+  defmodule MyConsumer do
+    use RBMQ.Consumer,
+      connection: MyAMQPConnection,
+
+      # Queue params
+      queue: [
+        name: "consomer_queue",
+        durable: false
+      ],
+      qos: [
+        prefetch_count: 10
+      ]
+
+    def consume(_payload, [tag: tag, redelivered?: _redelivered]) do
+      ack(tag)
     end
-    ```
+  end
+  ```
 
-    ```elixir
-    defmodule MyConsumer do
-      use RBMQ.Consumer,
-        connection: MyAMQPConnection,
+  Pay attention to `consume/2` method. Write your consuming logic there. We recommend to send async messages to GenServer that will consume them, so queue read wouldn't be blocked by a single thread.
 
-        # Queue params
-        queue: [
-          name: "consomer_queue",
-          durable: false
-        ],
-        qos: [
-          prefetch_count: 10
-        ]
-
-      def consume(_payload, [tag: tag, redelivered?: _redelivered]) do
-        ack(tag)
-      end
-    end
-    ```
-
-    Pay attention to `consume/2` method. Write your consuming logic there. We recommend to send async messages to GenServer that will consume them, so queue read wouldn't be blocked by a single thread.
-
-    If your queue required acknowledgements, use `ack\1` and `nack\1` methods.
+  If your queue required acknowledgements, use `ack\1` and `nack\1` methods.
 
   3. Add everything to your application supervisor:
 
-    ```elixir
-    defmodule MyApp do
-      use Application
+  ```elixir
+  defmodule MyApp do
+    use Application
 
-      # See http://elixir-lang.org/docs/stable/elixir/Application.html
-      # for more information on OTP Applications
-      def start(_type, _args) do
-        import Supervisor.Spec, warn: false
+    # See http://elixir-lang.org/docs/stable/elixir/Application.html
+    # for more information on OTP Applications
+    def start(_type, _args) do
+      import Supervisor.Spec, warn: false
 
-        # Define workers and child supervisors to be supervised
-        children = [
-          # Start the AMQP connection
-          supervisor(MyAMQPConnection, []),
-          # Start producer and consumer
-          worker(MyProducer, []),
-          worker(MyConsumer, []),
-        ]
+      # Define workers and child supervisors to be supervised
+      children = [
+        # Start the AMQP connection
+        supervisor(MyAMQPConnection, []),
+        # Start producer and consumer
+        worker(MyProducer, []),
+        worker(MyConsumer, []),
+      ]
 
-        opts = [strategy: :one_for_one, name: AssetProcessor.API.Supervisor]
-        Supervisor.start_link(children, opts)
-      end
+      opts = [strategy: :one_for_one, name: AssetProcessor.API.Supervisor]
+      Supervisor.start_link(children, opts)
     end
-    ```
+  end
+  ```
