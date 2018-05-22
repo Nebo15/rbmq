@@ -6,8 +6,7 @@ defmodule RBMQ.ConsumerTest do
   @queue "consumer_test_qeueue"
 
   defmodule ProducerTestConnection4Cons do
-    use RBMQ.Connection,
-      otp_app: :rbmq
+    use RBMQ.Connection, otp_app: :rbmq
   end
 
   defmodule TestProducer do
@@ -39,26 +38,26 @@ defmodule RBMQ.ConsumerTest do
         prefetch_count: 10
       ]
 
-    def consume(_payload, [tag: tag, redelivered?: _redelivered]) do
+    def consume(_payload, tag: tag, redelivered?: _redelivered) do
       ack(tag)
     end
   end
 
   setup_all do
-    ProducerTestConnection4Cons.start_link
-    TestProducer.start_link
-    TestConsumer.start_link
+    ProducerTestConnection4Cons.start_link()
+    TestProducer.start_link()
+    TestConsumer.start_link()
     :ok
   end
 
   setup do
     chan = ProducerTestConnection4Cons.get_channel(RBMQ.ConsumerTest.TestConsumer.Channel)
-    AMQP.Queue.purge(chan, @queue)
+    assert {:ok, _} = AMQP.Queue.purge(chan, @queue)
     [channel: chan]
   end
 
   test "read messages" do
-    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status
+    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status()
 
     assert :ok == TestProducer.publish(%{example: true})
     assert :ok == TestProducer.publish(1)
@@ -68,23 +67,24 @@ defmodule RBMQ.ConsumerTest do
 
     :timer.sleep(200)
 
-    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status
+    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status()
   end
 
-   test "reads messages when channel dies", context do
+  test "reads messages when channel dies", context do
     for n <- 1..100 do
       assert :ok == TestProducer.publish(n)
+
       if n == 20 do
         # Kill channel
         AMQP.Channel.close(context[:channel])
-        :timer.sleep(1) # Break execution loop
+        # Break execution loop
+        :timer.sleep(1)
       end
     end
-
 
     # Wait till it respawns
     :timer.sleep(5_000)
 
-    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status
+    assert {:ok, %{message_count: 0, queue: @queue}} = TestProducer.status()
   end
 end

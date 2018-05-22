@@ -5,8 +5,7 @@ defmodule RBMQ.ProducerTest do
   doctest RBMQ.Producer
 
   defmodule ProducerTestConnection do
-    use RBMQ.Connection,
-      otp_app: :rbmq
+    use RBMQ.Connection, otp_app: :rbmq
   end
 
   @queue "producer_test_qeueue"
@@ -44,14 +43,14 @@ defmodule RBMQ.ProducerTest do
   end
 
   setup_all do
-    ProducerTestConnection.start_link
-    TestProducer.start_link
+    ProducerTestConnection.start_link()
+    TestProducer.start_link()
     :ok
   end
 
   setup do
     chan = ProducerTestConnection.get_channel(RBMQ.ProducerTest.TestProducer.Channel)
-    AMQP.Queue.purge(chan, @queue)
+    assert {:ok, _} = AMQP.Queue.purge(chan, @queue)
     [channel: chan]
   end
 
@@ -76,7 +75,7 @@ defmodule RBMQ.ProducerTest do
 
     :timer.sleep(500)
 
-    assert {:ok, %{message_count: 1001, queue: @queue}} = TestProducer.status
+    assert {:ok, %{message_count: 1001, queue: @queue}} = TestProducer.status()
   end
 
   test "messages delivered when channel dies", context do
@@ -85,10 +84,12 @@ defmodule RBMQ.ProducerTest do
 
     for n <- 1..100 do
       assert :ok == TestProducer.publish(n)
+
       if n == 20 do
         # Kill channel
         AMQP.Channel.close(context[:channel])
-        :timer.sleep(1) # Break execution loop
+        # Break execution loop
+        :timer.sleep(1)
       end
     end
 
@@ -99,12 +100,12 @@ defmodule RBMQ.ProducerTest do
     assert Supervisor.count_children(ProducerTestConnection).active == 1
     assert Supervisor.count_children(ProducerTestConnection).workers == 1
 
-    assert {:ok, %{message_count: 100, queue: @queue}} = TestProducer.status
+    assert {:ok, %{message_count: 100, queue: @queue}} = TestProducer.status()
   end
 
   test "reads external config" do
     System.put_env("CUST_QUEUE_NAME", "ext_producer_test_qeueue")
-    TestProducerWithExternalConfig.start_link
+    TestProducerWithExternalConfig.start_link()
     System.delete_env("CUST_QUEUE_NAME")
 
     assert :ok == TestProducer.publish(%{example: true})

@@ -14,7 +14,7 @@ defmodule RBMQ.ConnectionTest do
       exchange: [
         name: "test_queue_1_exchange",
         type: :direct,
-        durable: true,
+        durable: true
       ],
       qos: [
         prefetch_count: 100
@@ -22,13 +22,11 @@ defmodule RBMQ.ConnectionTest do
   end
 
   defmodule TestConnectionWithExternalConfig do
-    use RBMQ.Connection,
-      otp_app: :rbmq
+    use RBMQ.Connection, otp_app: :rbmq
   end
 
   defmodule TestConnectionWithoutConfig do
-    use RBMQ.Connection,
-      otp_app: :rbmq
+    use RBMQ.Connection, otp_app: :rbmq
   end
 
   defmodule TestConnectionWithQOS do
@@ -55,7 +53,7 @@ defmodule RBMQ.ConnectionTest do
       exchange: [
         name: "test_queue_2_exchange",
         type: :direct,
-        durable: true,
+        durable: true
       ]
   end
 
@@ -70,21 +68,21 @@ defmodule RBMQ.ConnectionTest do
       exchange: [
         name: "test_qeueue_2_exchange",
         type: :direct,
-        durable: true,
+        durable: true
       ]
   end
 
   test "starts connection" do
-    assert {:ok, _} = TestConnection.start_link
+    assert {:ok, _} = TestConnection.start_link()
   end
 
   test "starts multiple connections" do
-    assert {:ok, _} = TestConnection.start_link
-    assert {:ok, _} = TestConnectionWithExchangeAndQueue.start_link
+    assert {:ok, _} = TestConnection.start_link()
+    assert {:ok, _} = TestConnectionWithExchangeAndQueue.start_link()
   end
 
   test "returns channel without config" do
-    TestConnectionWithoutConfig.start_link
+    TestConnectionWithoutConfig.start_link()
     assert {:ok, _} = TestConnectionWithoutConfig.spawn_channel(:somename)
 
     %AMQP.Channel{conn: conn} = TestConnectionWithoutConfig.get_channel(:somename)
@@ -95,7 +93,7 @@ defmodule RBMQ.ConnectionTest do
     System.put_env("CUST_MQ_HOST", "localhost")
     System.put_env("CUST_MQ_PORT", "5672")
 
-    TestConnectionWithExternalConfig.start_link
+    TestConnectionWithExternalConfig.start_link()
     assert {:ok, _} = TestConnectionWithExternalConfig.spawn_channel(:somename)
 
     %AMQP.Channel{conn: conn} = TestConnectionWithExternalConfig.get_channel(:somename)
@@ -106,7 +104,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "configures channel" do
-    TestConnectionWithoutConfig.start_link
+    TestConnectionWithoutConfig.start_link()
     assert {:ok, _} = TestConnectionWithoutConfig.spawn_channel(:somename)
     %AMQP.Channel{conn: conn} = TestConnectionWithoutConfig.get_channel(:somename)
 
@@ -119,7 +117,7 @@ defmodule RBMQ.ConnectionTest do
       exchange: [
         name: "test_qeueue_2_exchange",
         type: :direct,
-        durable: true,
+        durable: true
       ],
       qos: [
         prefetch_count: 100
@@ -131,7 +129,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "returns channel with qos config" do
-    TestConnectionWithQOS.start_link
+    TestConnectionWithQOS.start_link()
     assert {:ok, _} = TestConnectionWithQOS.spawn_channel(:somename)
 
     %AMQP.Channel{conn: conn} = TestConnectionWithQOS.get_channel(:somename)
@@ -139,7 +137,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "returns channel with queue config" do
-    TestConnectionWithQueue.start_link
+    TestConnectionWithQueue.start_link()
     assert {:ok, _} = TestConnectionWithQueue.spawn_channel(:somename)
 
     %AMQP.Channel{conn: conn} = TestConnectionWithQueue.get_channel(:somename)
@@ -147,7 +145,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "returns channel with exchange config" do
-    TestConnectionWithExchange.start_link
+    TestConnectionWithExchange.start_link()
     assert {:ok, _} = TestConnectionWithExchange.spawn_channel(:somename)
 
     %AMQP.Channel{conn: conn} = TestConnectionWithExchange.get_channel(:somename)
@@ -155,7 +153,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "returns channel with queue and exchange config" do
-    TestConnectionWithExchangeAndQueue.start_link
+    TestConnectionWithExchangeAndQueue.start_link()
     assert {:ok, _} = TestConnectionWithExchangeAndQueue.spawn_channel(:somename)
 
     %AMQP.Channel{conn: conn} = TestConnectionWithExchangeAndQueue.get_channel(:somename)
@@ -163,7 +161,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "spawns multiple channels" do
-    TestConnection.start_link
+    TestConnection.start_link()
 
     TestConnection.spawn_channel(:somename)
     assert %AMQP.Channel{} = TestConnection.get_channel(:somename)
@@ -181,7 +179,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "restarts connection" do
-    TestConnectionWithQueue.start_link
+    TestConnectionWithQueue.start_link()
     TestConnectionWithQueue.spawn_channel(:somename)
 
     %AMQP.Channel{conn: conn} = TestConnectionWithQueue.get_channel(:somename)
@@ -196,13 +194,12 @@ defmodule RBMQ.ConnectionTest do
     # Wait till channel restarts
     :timer.sleep(1000)
 
-
     assert %AMQP.Channel{} = chan = TestConnectionWithQueue.get_channel(:somename)
     assert {:ok, _} = AMQP.Queue.status(chan, "test_qeueue_2")
   end
 
   test "closes channels" do
-    TestConnection.start_link
+    TestConnection.start_link()
     {:ok, chan} = TestConnection.spawn_channel(:somename)
     %AMQP.Channel{conn: conn} = TestConnection.get_channel(:somename)
 
@@ -220,7 +217,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "restarts channels" do
-    TestConnection.start_link
+    TestConnection.start_link()
     assert {:ok, chan} = TestConnection.spawn_channel(:somename)
 
     # Kill channel
@@ -237,7 +234,7 @@ defmodule RBMQ.ConnectionTest do
   end
 
   test "restarts bare channels without config loss" do
-    TestConnectionWithoutConfig.start_link
+    TestConnectionWithoutConfig.start_link()
     TestConnectionWithoutConfig.spawn_channel(:somename)
     initial_channel = TestConnectionWithoutConfig.get_channel(:somename)
 
@@ -251,12 +248,13 @@ defmodule RBMQ.ConnectionTest do
       exchange: [
         name: "test_qeueue_2_exchange",
         type: :direct,
-        durable: true,
+        durable: true
       ],
       qos: [
         prefetch_count: 100
       ]
     ]
+
     TestConnectionWithoutConfig.configure_channel(:somename, conf)
 
     ref = Process.monitor(initial_channel.pid)
@@ -266,7 +264,8 @@ defmodule RBMQ.ConnectionTest do
     # Wait till channel restarts
     :timer.sleep(1000)
 
-    assert %AMQP.Channel{conn: conn} = new_channel = TestConnectionWithoutConfig.get_channel(:somename)
+    assert %AMQP.Channel{conn: conn} =
+             new_channel = TestConnectionWithoutConfig.get_channel(:somename)
 
     # New channel should work properly
     assert AMQP.Queue.message_count(new_channel, conf[:queue][:name]) == 0

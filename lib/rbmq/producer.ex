@@ -16,11 +16,18 @@ defmodule RBMQ.Producer do
         end
 
         case conf[:queue][:routing_key] do
-          {:system, _, _} -> :ok
-          {:system, _} -> :ok
-          str when is_binary(str) -> :ok
-          unknown -> raise "Queue routing key for #{__MODULE__} must be a string or env link, " <>
-                           "'#{inspect unknown}' given."
+          {:system, _, _} ->
+            :ok
+
+          {:system, _} ->
+            :ok
+
+          str when is_binary(str) ->
+            :ok
+
+          unknown ->
+            raise "Queue routing key for #{__MODULE__} must be a string or env link, " <>
+                    "'#{inspect(unknown)}' given."
         end
 
         unless conf[:exchange] do
@@ -32,11 +39,18 @@ defmodule RBMQ.Producer do
         end
 
         case conf[:exchange][:name] do
-          {:system, _, _} -> :ok
-          {:system, _} -> :ok
-          str when is_binary(str) -> :ok
-          unknown -> raise "Exchange name key for #{__MODULE__} must be a string or env link, " <>
-                           "'#{inspect unknown}' given."
+          {:system, _, _} ->
+            :ok
+
+          {:system, _} ->
+            :ok
+
+          str when is_binary(str) ->
+            :ok
+
+          unknown ->
+            raise "Exchange name key for #{__MODULE__} must be a string or env link, " <>
+                    "'#{inspect(unknown)}' given."
         end
 
         unless conf[:exchange][:type] do
@@ -59,18 +73,19 @@ defmodule RBMQ.Producer do
 
       @doc false
       def handle_call({:publish, data}, _from, chan) do
-        case Poison.encode(data) do
+        case Jason.encode(data) do
           {:ok, encoded_data} ->
             safe_publish(chan, encoded_data)
+
           {:error, _} = err ->
             {:reply, err, chan}
         end
       end
 
       defp safe_publish(chan, data) do
-        safe_run fn(chan) ->
+        safe_run(fn chan ->
           cast(chan, data)
-        end
+        end)
       end
 
       defp cast(chan, data) do
@@ -78,20 +93,23 @@ defmodule RBMQ.Producer do
 
         is_persistent = Keyword.get(conf[:queue], :durable, false)
 
-        case AMQP.Basic.publish(chan,
-                                conf[:exchange][:name],
-                                conf[:queue][:routing_key],
-                                data,
-                                [mandatory: true,
-                                 persistent: is_persistent]) do
+        case AMQP.Basic.publish(
+               chan,
+               conf[:exchange][:name],
+               conf[:queue][:routing_key],
+               data,
+               mandatory: true,
+               persistent: is_persistent
+             ) do
           :ok ->
             {:reply, :ok, chan}
+
           _ ->
             {:reply, :error, chan}
         end
       end
 
-      defoverridable [validate_config!: 1]
+      defoverridable validate_config!: 1
     end
   end
 

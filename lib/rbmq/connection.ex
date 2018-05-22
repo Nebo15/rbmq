@@ -22,8 +22,9 @@ defmodule RBMQ.Connection do
             # Get notifications when the connection goes down
             RBMQ.Connection.Guard.monitor(@guard_name, conn.pid)
             conn
+
           {:error, _} ->
-            Logger.warn "Trying to restart connection in #{inspect timeout} microseconds"
+            Logger.warn("Trying to restart connection in #{inspect(timeout)} microseconds")
             # Reconnection loop
             :timer.sleep(timeout)
             connect()

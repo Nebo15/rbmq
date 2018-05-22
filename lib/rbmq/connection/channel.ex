@@ -15,15 +15,20 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def init(opts) do
-    chan_opts = opts
-    |> Keyword.delete(:channel)
-    |> Keyword.delete(:connection)
-    |> Keyword.get(:config, [])
+    chan_opts =
+      opts
+      |> Keyword.delete(:channel)
+      |> Keyword.delete(:connection)
+      |> Keyword.get(:config, [])
 
     case Helper.open_channel(opts[:connection]) do
       {:error, :conn_dead} ->
-        Logger.warn "Connection #{inspect opts[:connection].pid} is dead, waiting for supervisor actions.."
+        Logger.warn(
+          "Connection #{inspect(opts[:connection].pid)} is dead, waiting for supervisor actions.."
+        )
+
         {:ok, [channel: nil, config: chan_opts, connection: nil]}
+
       {:ok, chan} ->
         configure(chan, chan_opts)
 
@@ -60,13 +65,21 @@ defmodule RBMQ.Connection.Channel do
     chan
   end
 
-  defp configure_exchange(chan, queue_opts, exchange_opts) when is_nil(queue_opts) or is_nil(exchange_opts) do
+  defp configure_exchange(chan, queue_opts, exchange_opts)
+       when is_nil(queue_opts) or is_nil(exchange_opts) do
     chan
   end
 
   defp configure_exchange(chan, queue_opts, exchange_opts) do
     Helper.declare_exchange(chan, exchange_opts[:name], exchange_opts[:type], exchange_opts)
-    Helper.bind_queue(chan, queue_opts[:name], exchange_opts[:name], routing_key: queue_opts[:routing_key])
+
+    Helper.bind_queue(
+      chan,
+      queue_opts[:name],
+      exchange_opts[:name],
+      routing_key: queue_opts[:routing_key]
+    )
+
     chan
   end
 
@@ -82,7 +95,7 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def reconnect(pid, conn) do
-    Logger.warn "Channel received connection change event: #{inspect conn}"
+    Logger.warn("Channel received connection change event: #{inspect(conn)}")
     GenServer.call(pid, {:reconnect, conn})
   end
 
@@ -108,7 +121,7 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def handle_info({:DOWN, monitor_ref, :process, pid, reason}, state) do
-    Logger.warn "AMQP channel #{inspect pid} went down with reason #{inspect reason}."
+    Logger.warn("AMQP channel #{inspect(pid)} went down with reason #{inspect(reason)}.")
     Process.demonitor(monitor_ref, [:flush])
     GenServer.cast(self(), {:restart, reason})
     {:noreply, state}
@@ -121,11 +134,12 @@ defmodule RBMQ.Connection.Channel do
     #     Logger.error "AMQP channel won't be restarted."
     #     {:stop, :normal, state}
     #   _ ->
-        {:ok, state} = state
-        |> Keyword.delete(:channel)
-        |> init
+    {:ok, state} =
+      state
+      |> Keyword.delete(:channel)
+      |> init
 
-        {:noreply, state}
+    {:noreply, state}
     # end
   end
 
@@ -147,24 +161,27 @@ defmodule RBMQ.Connection.Channel do
 
   @doc false
   def handle_call({:reconnect, conn}, _from, state) do
-    {:ok, state} = init([
-      connection: conn,
-      config: state[:config]
-    ])
+    {:ok, state} =
+      init(
+        connection: conn,
+        config: state[:config]
+      )
 
     {:reply, :ok, state}
   end
 
   @doc false
   def handle_call({:apply_config, config}, _from, state) do
-    chan = state[:channel]
-    |> configure(config)
+    chan =
+      state[:channel]
+      |> configure(config)
 
-    {:reply, :ok, [
-      channel: chan,
-      config: Keyword.merge(state[:config], config),
-      connection: state[:connection]
-    ]}
+    {:reply, :ok,
+     [
+       channel: chan,
+       config: Keyword.merge(state[:config], config),
+       connection: state[:connection]
+     ]}
   end
 
   @doc false

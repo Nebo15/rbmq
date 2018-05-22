@@ -4,8 +4,7 @@ defmodule RBMQ.ChannelTest do
   doctest RBMQ.Connection.Channel
 
   defmodule TestConnection do
-    use RBMQ.Connection,
-      otp_app: :rbmq
+    use RBMQ.Connection, otp_app: :rbmq
   end
 
   defmodule TestChannelSupervisor do
@@ -13,7 +12,7 @@ defmodule RBMQ.ChannelTest do
       import Supervisor.Spec, warn: false
 
       children = [
-        supervisor(TestConnection, []),
+        supervisor(TestConnection, [])
       ]
 
       opts = [strategy: :one_for_one, name: TestChannelSupervisor]
@@ -22,21 +21,22 @@ defmodule RBMQ.ChannelTest do
   end
 
   setup do
-    TestChannelSupervisor.start
+    TestChannelSupervisor.start()
     TestConnection.spawn_channel(:somename)
     %AMQP.Channel{conn: conn} = chan = TestConnection.get_channel(:somename)
 
-    on_exit fn ->
+    on_exit(fn ->
       assert :ok = AMQP.Connection.close(conn)
-    end
+    end)
 
     [channel: chan]
   end
 
   test "runs channel callback" do
-    assert :ok = RBMQ.Connection.Channel.run(:somename, fn chan ->
-      assert %AMQP.Channel{} = chan
-      :ok
-    end)
+    assert :ok =
+             RBMQ.Connection.Channel.run(:somename, fn chan ->
+               assert %AMQP.Channel{} = chan
+               :ok
+             end)
   end
 end
