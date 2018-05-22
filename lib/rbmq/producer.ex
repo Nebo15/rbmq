@@ -15,20 +15,8 @@ defmodule RBMQ.Producer do
           raise "You need to set queue routing key in #{__MODULE__} options."
         end
 
-        case conf[:queue][:routing_key] do
-          {:system, _, _} ->
-            :ok
-
-          {:system, _} ->
-            :ok
-
-          str when is_binary(str) ->
-            :ok
-
-          unknown ->
-            raise "Queue routing key for #{__MODULE__} must be a string or env link, " <>
-                    "'#{inspect(unknown)}' given."
-        end
+        err_msg = "Queue routing key for #{__MODULE__} must be a string or env link, given: "
+        validate_conf_value(conf[:queue][:routing_key], err_msg)
 
         unless conf[:exchange] do
           raise "You need to configure exchange in #{__MODULE__} options."
@@ -38,20 +26,8 @@ defmodule RBMQ.Producer do
           raise "You need to set exchange name in #{__MODULE__} options."
         end
 
-        case conf[:exchange][:name] do
-          {:system, _, _} ->
-            :ok
-
-          {:system, _} ->
-            :ok
-
-          str when is_binary(str) ->
-            :ok
-
-          unknown ->
-            raise "Exchange name key for #{__MODULE__} must be a string or env link, " <>
-                    "'#{inspect(unknown)}' given."
-        end
+        err_msg = "Exchange name key for #{__MODULE__} must be a string or env link, given: "
+        validate_conf_value(conf[:exchange][:name], err_msg)
 
         unless conf[:exchange][:type] do
           raise "You need to set exchange name in #{__MODULE__} options."
@@ -63,6 +39,12 @@ defmodule RBMQ.Producer do
 
         conf
       end
+
+      defp validate_conf_value({:system, _, _}, _err_msg), do: :ok
+      defp validate_conf_value({:system, _}, _err_msg), do: :ok
+      defp validate_conf_value(str, _err_msg) when is_binary(str), do: :ok
+
+      defp validate_conf_value(unknown, err_msg), do: raise(err_msg <> "'#{inspect(unknown)}'.")
 
       @doc """
       Publish new message to a linked channel.
