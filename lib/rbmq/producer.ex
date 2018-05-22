@@ -7,6 +7,8 @@ defmodule RBMQ.Producer do
 
   @doc false
   defmacro __using__(opts) do
+    alias AMQP.Basic
+
     quote bind_quoted: [opts: opts] do
       use RBMQ.GenQueue, opts
 
@@ -75,7 +77,7 @@ defmodule RBMQ.Producer do
 
         is_persistent = Keyword.get(conf[:queue], :durable, false)
 
-        case AMQP.Basic.publish(
+        case Basic.publish(
                chan,
                conf[:exchange][:name],
                conf[:queue][:routing_key],
