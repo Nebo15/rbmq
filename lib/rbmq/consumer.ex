@@ -16,10 +16,10 @@ defmodule RBMQ.Consumer do
       end
 
       defp link_consumer(chan, queue_name) do
-        safe_run fn(chan) ->
+        safe_run(fn chan ->
           {:ok, _consumer_tag} = AMQP.Basic.consume(chan, queue_name)
           Process.monitor(chan.pid)
-        end
+        end)
       end
 
       @doc false
@@ -45,30 +45,33 @@ defmodule RBMQ.Consumer do
       end
 
       # Handle new message delivery
-      def handle_info({:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}}, state) do
-        consume(payload, [tag: tag, redelivered?: redelivered])
+      def handle_info(
+            {:basic_deliver, payload, %{delivery_tag: tag, redelivered: redelivered}},
+            state
+          ) do
+        consume(payload, tag: tag, redelivered?: redelivered)
         {:noreply, state}
       end
 
       def ack(tag) do
-        safe_run fn(chan) ->
+        safe_run(fn chan ->
           AMQP.Basic.ack(chan, tag)
-        end
+        end)
       end
 
       def nack(tag) do
-        safe_run fn(chan) ->
+        safe_run(fn chan ->
           AMQP.Basic.nack(chan, tag)
-        end
+        end)
       end
 
       def cancel(tag) do
-        safe_run fn(chan) ->
+        safe_run(fn chan ->
           AMQP.Basic.cancel(chan, tag)
-        end
+        end)
       end
 
-      def consume(_payload, [tag: tag, redelivered?: _redelivered, channel: chan]) do
+      def consume(_payload, tag: tag, redelivered?: _redelivered, channel: chan) do
         # Mark this message as unprocessed
         nack(tag)
         # Stop consumer from receiving more messages
@@ -76,7 +79,7 @@ defmodule RBMQ.Consumer do
         raise "#{__MODULE__}.consume/2 is not implemented"
       end
 
-      defoverridable [consume: 2]
+      defoverridable consume: 2
     end
   end
 

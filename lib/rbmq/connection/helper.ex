@@ -14,7 +14,7 @@ defmodule RBMQ.Connection.Helper do
     username: {:system, "AMQP_USER", "guest"},
     password: {:system, "AMQP_PASSWORD", "guest"},
     virtual_host: {:system, "AMQP_VHOST", "/"},
-    connection_timeout: {:system, :integer, "AMQP_TIMEOUT", 15_000},
+    connection_timeout: {:system, :integer, "AMQP_TIMEOUT", 15_000}
   ]
 
   @doc """
@@ -43,6 +43,7 @@ defmodule RBMQ.Connection.Helper do
     case open_connection(conn_opts) do
       {:ok, %Connection{} = conn} ->
         conn
+
       {:error, message} ->
         raise message
     end
@@ -52,30 +53,36 @@ defmodule RBMQ.Connection.Helper do
   Same as `open_connection!/1`, but returns {:ok, conn} or {:error, reason} tuples.
   """
   def open_connection(conn_opts) do
-    Logger.debug "Establishing new AMQP connection, with opts: #{inspect conn_opts}"
+    Logger.debug(fn -> "Establishing new AMQP connection, with opts: #{inspect(conn_opts)}" end)
 
-    conn = @defaults
-    |> Keyword.merge(conn_opts)
-    |> env
-    |> Connection.open
+    conn =
+      @defaults
+      |> Keyword.merge(conn_opts)
+      |> env
+      |> Connection.open()
 
     case conn do
       {:ok, %Connection{}} = res ->
         res
+
       {:error, :not_allowed} ->
-        Logger.error "AMQP refused connection, opts: #{inspect conn_opts}"
+        Logger.error("AMQP refused connection, opts: #{inspect(conn_opts)}")
         {:error, "AMQP vhost not allowed"}
+
       {:error, :econnrefused} ->
-        Logger.error "AMQP refused connection, opts: #{inspect conn_opts}"
+        Logger.error("AMQP refused connection, opts: #{inspect(conn_opts)}")
         {:error, "AMQP connection was refused"}
+
       {:error, :timeout} ->
-        Logger.error "AMQP connection timeout, opts: #{inspect conn_opts}"
+        Logger.error("AMQP connection timeout, opts: #{inspect(conn_opts)}")
         {:error, "AMQP connection timeout"}
+
       {:error, {:auth_failure, message}} ->
-        Logger.error "AMQP authorization failed, opts: #{inspect conn_opts}"
-        {:error, "AMQP authorization failed: #{inspect message}"}
+        Logger.error("AMQP authorization failed, opts: #{inspect(conn_opts)}")
+        {:error, "AMQP authorization failed: #{inspect(message)}"}
+
       {:error, reason} ->
-        Logger.error "Error during AMQP connection establishing, opts: #{inspect conn_opts}"
+        Logger.error("Error during AMQP connection establishing, opts: #{inspect(conn_opts)}")
         {:error, inspect(reason)}
     end
   end
@@ -89,6 +96,7 @@ defmodule RBMQ.Connection.Helper do
     case open_channel(conn) do
       {:ok, %Channel{} = chan} ->
         chan
+
       {:error, message} ->
         raise message
     end
@@ -98,10 +106,12 @@ defmodule RBMQ.Connection.Helper do
   Same as `open_channel!/1`, but returns {:ok, conn} or {:error, reason} tuples.
   """
   def open_channel(%Connection{} = conn) do
-    Logger.debug "Opening new AMQP channel for conn #{inspect conn.pid}"
+    Logger.debug(fn -> "Opening new AMQP channel for conn #{inspect(conn.pid)}" end)
+
     case Process.alive?(conn.pid) do
       false ->
         {:error, :conn_dead}
+
       true ->
         _open_channel(conn)
     end
@@ -111,12 +121,14 @@ defmodule RBMQ.Connection.Helper do
     case Channel.open(conn) do
       {:ok, %Channel{} = chan} ->
         {:ok, chan}
+
       :closing ->
-        Logger.debug "Channel is closing, retry.."
+        Logger.debug(fn -> "Channel is closing, retry.." end)
         :timer.sleep(1_000)
         open_channel(conn)
+
       {:error, reason} ->
-        Logger.error "Can't create new AMQP channel"
+        Logger.error("Can't create new AMQP channel")
         {:error, inspect(reason)}
     end
   end
@@ -125,7 +137,7 @@ defmodule RBMQ.Connection.Helper do
   Gracefully close AMQP channel.
   """
   def close_channel(%Channel{} = chan) do
-    Logger.debug "Closing AMQP channel"
+    Logger.debug(fn -> "Closing AMQP channel" end)
     Channel.close(chan)
   end
 
@@ -142,7 +154,7 @@ defmodule RBMQ.Connection.Helper do
   See: https://hexdocs.pm/amqp/AMQP.Basic.html#qos/2
   """
   def set_channel_qos(%Channel{} = chan, opts) do
-    Logger.debug "Changing channel QOS to #{inspect opts}"
+    Logger.debug(fn -> "Changing channel QOS to #{inspect(opts)}" end)
 
     Basic.qos(chan, env(opts))
 
@@ -161,14 +173,21 @@ defmodule RBMQ.Connection.Helper do
 
   See: https://hexdocs.pm/amqp/AMQP.Queue.html#declare/3
   """
-  def declare_queue(%Channel{} = chan, queue, error_queue, opts) when is_binary(error_queue) and error_queue != "" do
-    Logger.debug "Declaring new queue '#{queue}' with dead letter queue '#{error_queue}'. Options: #{inspect opts}"
+  def declare_queue(%Channel{} = chan, queue, error_queue, opts)
+      when is_binary(error_queue) and error_queue != "" do
+    Logger.debug(fn ->
+      "Declaring new queue '#{queue}' with dead letter queue '#{error_queue}'. Options: #{
+        inspect(opts)
+      }"
+    end)
 
     opts =
-      [arguments: [
-        {"x-dead-letter-exchange", :longstr, ""},
-        {"x-dead-letter-routing-key", :longstr, error_queue}
-      ]]
+      [
+        arguments: [
+          {"x-dead-letter-exchange", :longstr, ""},
+          {"x-dead-letter-routing-key", :longstr, error_queue}
+        ]
+      ]
       |> Keyword.merge(opts)
       |> env()
 
@@ -179,7 +198,10 @@ defmodule RBMQ.Connection.Helper do
   end
 
   def declare_queue(%Channel{} = chan, queue, _, opts) do
-    Logger.debug "Declaring new queue '#{queue}' without dead letter queue. Options: #{inspect opts}"
+    Logger.debug(fn ->
+      "Declaring new queue '#{queue}' without dead letter queue. Options: #{inspect(opts)}"
+    end)
+
     Queue.declare(chan, env(queue), env(opts))
 
     chan
@@ -197,7 +219,10 @@ defmodule RBMQ.Connection.Helper do
   See: https://hexdocs.pm/amqp/AMQP.Queue.html#declare/3
   """
   def declare_exchange(%Channel{} = chan, exchange, type \\ :direct, opts \\ []) do
-    Logger.debug "Declaring new exchange '#{exchange}' of type '#{inspect type}'. Options: #{inspect opts}"
+    Logger.debug(fn ->
+      "Declaring new exchange '#{exchange}' of type '#{inspect(type)}'. Options: #{inspect(opts)}"
+    end)
+
     Exchange.declare(chan, env(exchange), env(type), env(opts))
 
     chan
@@ -209,7 +234,10 @@ defmodule RBMQ.Connection.Helper do
   See: https://hexdocs.pm/amqp/AMQP.Queue.html#bind/4
   """
   def bind_queue(%Channel{} = chan, queue, exchange, opts) do
-    Logger.debug "Binding new queue '#{queue}' to exchange '#{exchange}'. Options: #{inspect opts}"
+    Logger.debug(fn ->
+      "Binding new queue '#{queue}' to exchange '#{exchange}'. Options: #{inspect(opts)}"
+    end)
+
     Queue.bind(chan, env(queue), env(exchange), env(opts))
 
     chan
